@@ -53,7 +53,7 @@
     <div class="card" style="margin-bottom: 15px;">
         <div style="display: flex; justify-content: space-between; align-items: start;">
             <div style="flex: 1;">
-                <h4 style="margin: 0 0 10px 0;">{{ order_item.item.name }}</h4>
+                <h4 style="margin: 0 0 10px 0;">{{ order_item.item.name if order_item.item else 'Item Removido' }}</h4>
 
                 <!-- Sub-items if any -->
                 {% if order_item.subitems_json %}
@@ -198,7 +198,7 @@
                 style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.05);">
                 <div>
                     <h4 style="margin: 0; color: var(--accent-cyan);">
-                        {{ order_item.quantity }}x {{ order_item.item.name }}
+                        {{ order_item.quantity }}x {{ order_item.item.name if order_item.item else 'Item Removido' }}
                     </h4>
 
                     {% if order_item.subitems_json %}
@@ -220,10 +220,12 @@
                 <div style="display: flex; gap: 10px; align-items: center;">
                     <span style="font-weight: bold;">R$ {{ "%.2f"|format(order_item.subtotal) }}</span>
 
+                    {% if order_item.item %}
                     <a href="{{ url_for('admin.configure_order_item', order_id=order.id, item_id=order_item.item.id, order_item_id=order_item.id) }}"
                         class="icon-btn minimal" title="Editar Completo">
                         <i class="ph ph-pencil-simple"></i>
                     </a>
+                    {% endif %}
 
                     <button type="submit" form="delete-form-{{ order_item.id }}" class="icon-btn minimal"
                         title="Remover" style="color: var(--danger);">
