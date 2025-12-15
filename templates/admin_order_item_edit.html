@@ -1,0 +1,322 @@
+{% extends "base.html" %}
+
+{% block title %}Admin: Editar Item - {{ item.name }}{% endblock %}
+
+{% block content %}
+<style>
+    .subitem-section {
+        background: var(--card-bg);
+        padding: 20px;
+        border-radius: 8px;
+        margin: 20px 0;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .option-item {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 12px;
+        margin: 8px 0;
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 6px;
+        border: 1px solid transparent;
+        transition: all 0.2s;
+    }
+
+    .option-item:hover {
+        border-color: var(--accent-cyan);
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .option-item input[type="radio"],
+    .option-item input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+    }
+
+    .qty-selector {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .qty-btn {
+        width: 30px;
+        height: 30px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: transparent;
+        color: white;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: all 0.2s;
+    }
+
+    .qty-btn:hover {
+        background: var(--accent-cyan);
+        border-color: var(--accent-cyan);
+    }
+
+    .qty-value {
+        min-width: 40px;
+        text-align: center;
+        font-weight: bold;
+    }
+</style>
+
+<div class="container" style="max-width: 800px; margin: 30px auto; padding: 20px;">
+    <!-- Admin Header -->
+    <div style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px; color: var(--accent-cyan);">
+        <i class="ph ph-wrench"></i>
+        <span>Modo de Edição Avançada (Admin)</span>
+    </div>
+
+    <div class="glass-panel" style="padding: 30px;">
+        <!-- Item Info -->
+        <div style="text-align: center; margin-bottom: 30px;">
+            {% if item.image_url %}
+            <img src="{{ item.image_url }}"
+                style="max-width: 100%; max-height: 300px; border-radius: 12px; margin-bottom: 15px;">
+            {% endif %}
+            <h2>{{ item.name }}</h2>
+            <p style="font-size: 28px; color: var(--success); font-weight: bold;">
+                Base: R$ <span id="basePrice">{{ "%.2f"|format(item.price) }}</span>
+            </p>
+        </div>
+
+        <form method="POST" action="{{ url_for('admin.save_order_item_admin') }}" id="adminItemForm">
+            <input type="hidden" name="order_id" value="{{ order_id }}">
+            <input type="hidden" name="item_id" value="{{ item.id }}">
+            <input type="hidden" name="order_item_id" value="{{ order_item_id if order_item_id else '' }}">
+            <input type="hidden" name="subitems_choice" id="subitemsChoiceInput">
+
+            <!-- Quantity -->
+            <div
+                style="margin-bottom: 30px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; text-align: center;">
+                <label style="display: block; margin-bottom: 10px; font-weight: bold;">Quantidade do Item:</label>
+                <div class="qty-selector" style="justify-content: center;">
+                    <button type="button" class="qty-btn" onclick="changeQty(-1)">-</button>
+                    <span class="qty-value" id="mainQty">1</span>
+                    <button type="button" class="qty-btn" onclick="changeQty(1)">+</button>
+                </div>
+                <input type="hidden" name="quantity" id="quantityInput" value="1">
+            </div>
+
+            <!-- Sub-items -->
+            {% if item.subitems_json %}
+            {% for group in item.subitems_json %}
+            {% set outer_loop = loop %}
+            <div class="subitem-section">
+                <h3 style="margin-bottom: 15px;">
+                    {{ group.title }}
+                    {% if group.type == 'radio' %}
+                    <small style="color: var(--text-muted); font-size: 0.7em;">(uma opção)</small>
+                    {% else %}
+                    <small style="color: var(--text-muted); font-size: 0.7em;">(múltiplas escolhas)</small>
+                    {% endif %}
+                </h3>
+
+                {% for option in group.options %}
+                {% set option_name = option.name if option is mapping else option %}
+                {% set option_price = option.price if option is mapping else 0 %}
+
+                <div class="option-item">
+                    {% if group.type == 'radio' %}
+                    <input type="radio" name="group_{{ outer_loop.index0 }}" value="{{ option_name }}"
+                        data-price="{{ option_price }}" onchange="updateTotal()">
+                    {% else %}
+                    <input type="checkbox" name="group_{{ outer_loop.index0 }}_{{ loop.index }}"
+                        value="{{ option_name }}" data-price="{{ option_price }}" data-group="{{ outer_loop.index0 }}"
+                        data-option="{{ loop.index }}" onchange="toggleQtySelector(this); updateTotal()">
+                    {% endif %}
+
+                    <label style="flex: 1; cursor: pointer; margin: 0;">
+                        {{ option_name }}
+                        {% if option_price > 0 %}
+                        <span style="color: var(--accent-cyan); margin-left: 8px;">
+                            +R$ {{ "%.2f"|format(option_price) }}
+                        </span>
+                        {% endif %}
+                    </label>
+
+                    {% if group.type == 'checkbox' %}
+                    <div class="qty-selector" id="qty_{{ outer_loop.index0 }}_{{ loop.index }}" style="display: none;">
+                        <button type="button" class="qty-btn"
+                            onclick="changeSubitemQty({{ outer_loop.index0 }}, {{ loop.index }}, -1)">-</button>
+                        <span class="qty-value" id="qty_val_{{ outer_loop.index0 }}_{{ loop.index }}">1</span>
+                        <button type="button" class="qty-btn"
+                            onclick="changeSubitemQty({{ outer_loop.index0 }}, {{ loop.index }}, 1)">+</button>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            <!-- Total -->
+            <div style="background: rgba(0,212,255,0.1); padding: 20px; border-radius: 8px; margin: 30px 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <strong style="font-size: 20px;">Novo Total Estimado:</strong>
+                    <strong style="font-size: 28px; color: var(--success);" id="totalPrice">
+                        R$ {{ "%.2f"|format(item.price) }}
+                    </strong>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div style="display: flex; gap: 10px;">
+                <a href="{{ url_for('admin.order_details', order_id=order_id) }}" class="btn-secondary"
+                    style="flex: 1; text-align: center;">
+                    Cancelar / Voltar
+                </a>
+                <button type="submit" class="btn-neon" style="flex: 2;" onclick="prepareSubitemsData()">
+                    <i class="ph ph-floppy-disk"></i> Salvar e Voltar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const basePrice = {{ item.price }};
+    const subitems = {{ item.subitems_json| tojson if item.subitems_json else '[]' | safe }};
+
+    // Edit Mode Data
+    const existingQty = {{ existing_qty if existing_qty else 1 }};
+    const existingSubitemsData = {{ existing_subitems| tojson if existing_subitems else '[]' | safe }};
+
+    const subitemQty = {};
+
+    // Initialize state
+    document.addEventListener('DOMContentLoaded', () => {
+        // Always pre-fill logic if editing
+        document.getElementById('mainQty').textContent = existingQty;
+        document.getElementById('quantityInput').value = existingQty;
+
+        if (existingSubitemsData.length > 0) {
+            existingSubitemsData.forEach(choice => {
+                if (choice.type === 'radio') {
+                    const radios = document.querySelectorAll(`input[type="radio"][value="${choice.option}"]`);
+                    radios.forEach(r => r.checked = true);
+                } else if (choice.type === 'checkbox') {
+                    choice.options.forEach(opt => {
+                        const checkboxes = document.querySelectorAll(`input[type="checkbox"][value="${opt.option}"]`);
+                        checkboxes.forEach(cb => {
+                            cb.checked = true;
+                            // Set Qty
+                            const group = cb.dataset.group;
+                            const optionIdx = cb.dataset.option;
+                            const key = `${group}_${optionIdx}`;
+
+                            if (opt.qty > 1) {
+                                subitemQty[key] = opt.qty;
+                                const qtyElem = document.getElementById(`qty_val_${key}`);
+                                if (qtyElem) qtyElem.textContent = opt.qty;
+                            }
+                            // Show qty selector
+                            toggleQtySelector(cb);
+                        });
+                    });
+                }
+            });
+        }
+        updateTotal();
+    });
+
+    function changeQty(delta) {
+        const qtyElem = document.getElementById('mainQty');
+        let qty = parseInt(qtyElem.textContent);
+        qty = Math.max(1, qty + delta);
+        qtyElem.textContent = qty;
+        document.getElementById('quantityInput').value = qty;
+        updateTotal();
+    }
+
+    function toggleQtySelector(checkbox) {
+        const group = checkbox.dataset.group;
+        const option = checkbox.dataset.option;
+        const qtyDiv = document.getElementById(`qty_${group}_${option}`);
+
+        if (checkbox.checked) {
+            qtyDiv.style.display = 'flex';
+            if (!subitemQty[`${group}_${option}`]) {
+                subitemQty[`${group}_${option}`] = 1;
+            }
+        } else {
+            qtyDiv.style.display = 'none';
+            delete subitemQty[`${group}_${option}`];
+        }
+    }
+
+    function changeSubitemQty(group, option, delta) {
+        const key = `${group}_${option}`;
+        if (!subitemQty[key]) subitemQty[key] = 1;
+        subitemQty[key] = Math.max(1, subitemQty[key] + delta);
+        document.getElementById(`qty_val_${key}`).textContent = subitemQty[key];
+        updateTotal();
+    }
+
+    function updateTotal() {
+        let total = basePrice;
+        const mainQty = parseInt(document.getElementById('mainQty').textContent);
+
+        // Radio selections
+        document.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
+            total += parseFloat(radio.dataset.price) || 0;
+        });
+
+        // Checkbox selections
+        document.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+            const price = parseFloat(checkbox.dataset.price) || 0;
+            const group = checkbox.dataset.group;
+            const option = checkbox.dataset.option;
+            const qty = subitemQty[`${group}_${option}`] || 1;
+            total += price * qty;
+        });
+
+        total *= mainQty;
+        document.getElementById('totalPrice').textContent = `R$ ${total.toFixed(2)}`;
+    }
+
+    function prepareSubitemsData() {
+        const choices = [];
+
+        // Radio groups
+        subitems.forEach((group, groupIndex) => {
+            if (group.type === 'radio') {
+                const selected = document.querySelector(`input[name="group_${groupIndex}"]:checked`);
+                if (selected) {
+                    choices.push({
+                        group: group.title,
+                        type: 'radio',
+                        option: selected.value,
+                        price: parseFloat(selected.dataset.price) || 0
+                    });
+                }
+            } else {
+                // Checkbox groups
+                const selectedOptions = [];
+                document.querySelectorAll(`input[type="checkbox"][data-group="${groupIndex}"]:checked`).forEach(checkbox => {
+                    const optionIdx = checkbox.dataset.option;
+                    const qty = subitemQty[`${groupIndex}_${optionIdx}`] || 1;
+                    selectedOptions.push({
+                        option: checkbox.value,
+                        price: parseFloat(checkbox.dataset.price) || 0,
+                        qty: qty
+                    });
+                });
+                if (selectedOptions.length > 0) {
+                    choices.push({
+                        group: group.title,
+                        type: 'checkbox',
+                        options: selectedOptions
+                    });
+                }
+            }
+        });
+
+        document.getElementById('subitemsChoiceInput').value = JSON.stringify(choices);
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,426 @@
+:root {
+    --bg-dark: #071028;
+    --bg-darker: #050a18;
+    --card-bg: #0b1220;
+    --text-main: #e6eef8;
+    --text-muted: #a0a8b8;
+    --accent-purple: #7c5cff;
+    --accent-cyan: #00d4ff;
+    --input-bg: #071428;
+    --danger: #ff4b4b;
+    --success: #00e676;
+}
+
+body {
+    background: linear-gradient(135deg, var(--bg-dark) 0%, #071a2b 100%);
+    color: var(--text-main);
+    font-family: 'Ubuntu', sans-serif;
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    display: flex;
+    flex-direction: column;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+    transition: opacity 0.2s;
+}
+
+a:hover {
+    opacity: 0.8;
+}
+
+/* Glassmorphism / Tech look */
+.glass-panel {
+    background: rgba(11, 18, 32, 0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Buttons */
+.btn-neon {
+    background: linear-gradient(90deg, var(--accent-purple), var(--accent-cyan));
+    color: #fff;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 0 15px rgba(124, 92, 255, 0.3);
+}
+
+.btn-neon:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 25px rgba(0, 212, 255, 0.5);
+}
+
+.btn-secondary {
+    background: transparent;
+    border: 1px solid var(--accent-cyan);
+    color: var(--accent-cyan);
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+/* Inputs */
+input,
+select,
+textarea {
+    background: var(--input-bg);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    padding: 12px;
+    border-radius: 8px;
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 15px;
+    transition: border-color 0.3s;
+}
+
+input:focus {
+    outline: none;
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 8px rgba(0, 212, 255, 0.2);
+}
+
+/* Cards */
+.card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Typography */
+h1,
+h2,
+h3 {
+    margin-top: 0;
+    background: linear-gradient(90deg, #fff, #a0a8b8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.text-accent {
+    color: var(--accent-cyan);
+}
+
+/* Alerts/Toasts */
+.alert {
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border-left: 4px solid;
+}
+
+.alert-error {
+    background: rgba(255, 75, 75, 0.1);
+    border-color: var(--danger);
+    color: var(--danger);
+}
+
+.alert-success {
+    background: rgba(0, 230, 118, 0.1);
+    border-color: var(--success);
+    color: var(--success);
+}
+
+/* Navbar */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 30px;
+    background: rgba(5, 10, 24, 0.9);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.nav-brand {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--accent-cyan);
+    text-decoration: none;
+}
+
+.nav-link {
+    color: var(--text-muted);
+    text-decoration: none;
+    margin-left: 20px;
+    transition: color 0.3s;
+}
+
+.nav-link:hover {
+    color: white;
+}
+
+/* ============================================
+   RESPONSIVIDADE MOBILE
+   ============================================ */
+
+/* Tablets (até 900px) */
+@media (max-width: 900px) {
+    .container {
+        padding: 15px;
+    }
+
+    h1 {
+        font-size: 2rem;
+    }
+
+    h2 {
+        font-size: 1.5rem;
+    }
+
+    .glass-panel {
+        padding: 20px;
+    }
+}
+
+/* Smartphones (até 600px) */
+@media (max-width: 600px) {
+    body {
+        font-size: 14px;
+    }
+
+    .container {
+        padding: 10px;
+    }
+
+    h1 {
+        font-size: 1.6rem;
+    }
+
+    h2 {
+        font-size: 1.3rem;
+    }
+
+    h3 {
+        font-size: 1.1rem;
+    }
+
+    .btn-neon,
+    .btn-secondary {
+        padding: 10px 18px;
+        font-size: 14px;
+        width: 100%;
+    }
+
+    .glass-panel {
+        padding: 15px;
+        border-radius: 10px;
+    }
+
+    input,
+    select,
+    textarea {
+        padding: 14px;
+        font-size: 16px;
+    }
+
+    .navbar {
+        flex-direction: column;
+        gap: 10px;
+        padding: 15px;
+    }
+
+    .nav-link {
+        margin: 5px 0;
+        display: block;
+    }
+
+    table {
+        display: block;
+        overflow-x: auto;
+    }
+}
+
+/* Smartphones pequenos (até 400px) */
+@media (max-width: 400px) {
+    .container {
+        padding: 8px;
+    }
+
+    h1 {
+        font-size: 1.4rem;
+    }
+
+    .glass-panel {
+        padding: 12px;
+    }
+}
+
+/* Minimalist Elements */
+.icon-btn {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.icon-btn:hover {
+    background: var(--accent-cyan);
+    border-color: var(--accent-cyan);
+}
+
+.icon-btn.minimal {
+    background: transparent;
+    border: none;
+    padding: 5px;
+    opacity: 0.7;
+}
+
+.icon-btn.minimal:hover {
+    opacity: 1;
+    transform: scale(1.1);
+    background: transparent;
+    border: none;
+}
+
+/* ========================================
+   MOBILE RESPONSIVENESS
+   ======================================== */
+
+/* Tablets and below */
+@media (max-width: 768px) {
+    .container {
+        padding: 15px;
+    }
+
+    .glass-panel {
+        padding: 20px !important;
+        border-radius: 12px;
+    }
+
+    .navbar {
+        padding: 12px 15px !important;
+    }
+
+    .nav-links {
+        gap: 12px !important;
+    }
+
+    .nav-link {
+        font-size: 0.85em;
+    }
+
+    .card {
+        padding: 15px !important;
+    }
+
+    .btn-neon,
+    .btn-secondary {
+        padding: 10px 18px !important;
+        font-size: 0.95em !important;
+    }
+
+    .input-field,
+    input,
+    select,
+    textarea {
+        font-size: 16px !important;
+    }
+
+    table {
+        font-size: 0.9em;
+    }
+
+    td,
+    th {
+        padding: 10px 8px !important;
+    }
+}
+
+/* Mobile phones */
+@media (max-width: 480px) {
+    .container {
+        padding: 10px;
+    }
+
+    .glass-panel {
+        padding: 15px !important;
+    }
+
+    .navbar {
+        padding: 10px !important;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .nav-brand {
+        font-size: 1.2rem !important;
+    }
+
+    h1 {
+        font-size: 1.75rem !important;
+    }
+
+    h2 {
+        font-size: 1.5rem !important;
+    }
+
+    h3 {
+        font-size: 1.25rem !important;
+    }
+
+    .btn-neon,
+    .btn-secondary {
+        width: 100%;
+        padding: 12px !important;
+        justify-content: center;
+    }
+
+    table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+
+    /* Hide desktop nav, show mobile */
+    .desktop-nav {
+        display: none !important;
+    }
+
+    .mobile-menu-btn {
+        display: block !important;
+    }
+
+    #floatingCart {
+        display: flex !important;
+    }
+
+    .item-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* Touch improvements */
+@media (hover: none) and (pointer: coarse) {
+
+    button,
+    .btn-neon,
+    .btn-secondary {
+        min-height: 44px;
+    }
+}

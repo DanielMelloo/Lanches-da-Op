@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Meus Pedidos - Lanches OP{% endblock %}
+
+{% block content %}
+<div class="flex justify-center mb-lg">
+    <div class="glass-panel" style="display: inline-flex; padding: 5px; gap: 5px; border-radius: 50px;">
+        <button onclick="changeFilter('all')" id="tab-all" class="btn-secondary"
+            style="border: none; border-radius: 40px; padding: 0 20px; height: 36px; background: var(--accent-cyan); color: #000;">Todos</button>
+        <button onclick="changeFilter('pending')" id="tab-pending" class="btn-secondary"
+            style="border: none; border-radius: 40px; padding: 0 20px; height: 36px; opacity: 0.7;">Pendentes</button>
+        <button onclick="changeFilter('completed')" id="tab-completed" class="btn-secondary"
+            style="border: none; border-radius: 40px; padding: 0 20px; height: 36px; opacity: 0.7;">Concluídos</button>
+    </div>
+</div>
+
+<div id="orders-container">
+    <!-- Skeleton Loader (Initial State) -->
+    {% for i in range(5) %}
+    <div class="glass-panel mb-md p-md relative" style="border-left: 4px solid rgba(255,255,255,0.1);">
+        <div class="flex justify-between items-start mb-sm">
+            <div>
+                <div
+                    style="width: 140px; height: 24px; background: rgba(255,255,255,0.05); border-radius: 4px; margin-bottom: 8px;">
+                </div>
+                <div style="width: 100px; height: 16px; background: rgba(255,255,255,0.05); border-radius: 4px;"></div>
+            </div>
+            <div class="text-right">
+                <div
+                    style="width: 80px; height: 24px; background: rgba(255,255,255,0.05); border-radius: 4px; margin-bottom: 8px; margin-left: auto;">
+                </div>
+                <div style="width: 120px; height: 16px; background: rgba(255,255,255,0.05); border-radius: 4px;"></div>
+            </div>
+        </div>
+        <div class="flex justify-between items-center mt-sm pt-sm"
+            style="border-top: 1px solid rgba(255,255,255,0.05);">
+            <div style="width: 100px; height: 24px; background: rgba(255,255,255,0.05); border-radius: 12px;"></div>
+            <div style="width: 24px; height: 24px; background: rgba(255,255,255,0.05); border-radius: 50%;"></div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+    let currentFilter = '{{ filter_status|default("all") }}';
+    let currentPage = 1;
+
+    function changeFilter(filter) {
+        currentFilter = filter;
+        currentPage = 1;
+
+        // Update tabs
+        document.querySelectorAll('button[id^="tab-"]').forEach(btn => {
+            btn.style.background = 'transparent';
+            btn.style.color = 'var(--accent-cyan)';
+            btn.style.opacity = '0.7';
+        });
+        const activeBtn = document.getElementById(`tab-${filter}`);
+        activeBtn.style.background = 'var(--accent-cyan)';
+        activeBtn.style.color = '#000';
+        activeBtn.style.opacity = '1';
+
+        loadOrders(1);
+    }
+
+    function loadOrders(page) {
+        currentPage = page;
+        const container = document.getElementById('orders-container');
+
+        // Show lightweight loading state if not first load? 
+        // Or just let it replace. Let's add opacity transition.
+        container.style.opacity = '0.5';
+
+        const url = `/user/api/orders?filter=${currentFilter}&page=${page}`;
+
+        fetch(url)
+            .then(response => response.text())
+            .then(html => {
+                container.innerHTML = html;
+                container.style.opacity = '1';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            })
+            .catch(err => {
+                console.error('Error loading orders:', err);
+                container.style.opacity = '1';
+                container.innerHTML = '<p class="text-center text-danger">Erro ao carregar pedidos. Tente novamente.</p>';
+            });
+    }
+
+    // Initial Load
+    document.addEventListener('DOMContentLoaded', () => {
+        loadOrders(1);
+    });
+</script>
+{% endblock %}

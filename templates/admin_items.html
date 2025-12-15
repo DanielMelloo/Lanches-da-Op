@@ -1,0 +1,321 @@
+{% extends "base.html" %}
+
+{% block title %}Itens - Admin{% endblock %}
+
+{% block content %}
+<style>
+    .search-container {
+        margin-bottom: 30px;
+        position: relative;
+    }
+
+    .search-container i {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+        font-size: 18px;
+        pointer-events: none;
+    }
+
+    .search-input {
+        width: 100%;
+        max-width: 500px;
+        padding: 12px 15px 12px 45px;
+        background: var(--input-bg);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        color: white;
+        font-size: 16px;
+    }
+
+    .item-card {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 15px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        transition: all 0.3s;
+    }
+
+    .item-card:hover {
+        border-color: var(--accent-cyan);
+        transform: translateY(-2px);
+    }
+
+    .item-image {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 8px;
+        margin-right: 15px;
+    }
+
+    .image-upload-zone {
+        border: 2px dashed rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        margin-bottom: 10px;
+    }
+
+    .image-upload-zone:hover,
+    .image-upload-zone.drag-over {
+        border-color: var(--accent-cyan);
+        background: rgba(0, 212, 255, 0.05);
+    }
+
+    .item-grid {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+
+    .item-details {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .item-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .icon-btn {
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: white;
+        padding: 8px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .icon-btn:hover {
+        background: var(--accent-cyan);
+        border-color: var(--accent-cyan);
+    }
+</style>
+
+<div class="glass-panel" style="padding: 30px;">
+    <h2><i class="ph ph-hamburger" style="margin-right: 10px;"></i>Gerenciar Itens</h2>
+    <p class="text-muted">Cadastre e edite produtos do cardápio</p>
+
+    <!-- Action Buttons -->
+    <div style="margin: 20px 0; display: flex; gap: 10px;">
+        <a href="{{ url_for('admin.stores') }}" class="btn-neon">
+            <i class="ph ph-storefront"></i> Criar/Gerenciar Lojas
+        </a>
+        <a href="{{ url_for('admin.scraper') }}" class="btn-secondary">
+            <i class="ph ph-robot"></i> Automação de Cardápio
+        </a>
+    </div>
+
+    <!-- Add New Item -->
+    <div class="card" style="margin-bottom: 30px;">
+        <h3><i class="ph ph-plus-circle"></i> Novo Item</h3>
+        <form method="POST" enctype="multipart/form-data">
+            <div style="margin-bottom: 15px;">
+                <label>Nome do Item</label>
+                <input type="text" name="name" required>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label>Preço (R$)</label>
+                <input type="number" step="0.01" name="price" required>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label>Categoria (Loja)</label>
+                <select name="store_id" required>
+                    <option value="">Selecione...</option>
+                    {% for store in stores %}
+                    <option value="{{ store.id }}">{{ store.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Image Upload Zone -->
+            <div style="margin-bottom: 15px;">
+                <label>Imagem do Item</label>
+                <div class="image-upload-zone" id="dropZone" onclick="document.getElementById('imageFile').click()">
+                    <i class="ph ph-image" style="font-size: 32px; display: block; margin-bottom: 10px;"></i>
+                    <p>Arraste uma imagem ou clique para selecionar</p>
+                    <small style="color: var(--text-muted);">JPG, PNG, WEBP - até 5MB</small>
+                </div>
+                <input type="file" id="imageFile" name="image_file" accept="image/*" style="display: none;"
+                    onchange="handleFileSelect(event)">
+
+                <!-- OR URL Input -->
+                <div style="margin-top: 10px;">
+                    <input type="text" name="image_url" placeholder="...ou cole a URL da imagem" style="width: 100%;">
+                </div>
+            </div>
+
+            <button type="submit" class="btn-neon"><i class="ph ph-floppy-disk"></i> Criar Item</button>
+        </form>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="search-container">
+        <i class="ph ph-magnifying-glass"></i>
+        <input type="text" id="searchInput" class="search-input" placeholder="Pesquisar item..."
+            onkeyup="filterItems()">
+    </div>
+
+    <!-- Items List -->
+    <h3 style="margin-top: 30px;"><i class="ph ph-list"></i> Itens Cadastrados</h3>
+    <div id="itemsList">
+        {% for item in items %}
+        <div class="item-card" data-name="{{ item.name|lower }}"
+            data-store="{{ item.store.name|lower if item.store else '' }}">
+            <div class="item-grid">
+                {% if item.image_url %}
+                <img src="{{ item.image_url }}" alt="{{ item.name }}" class="item-image">
+                {% else %}
+                <div class="item-image"
+                    style="background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center;">
+                    <i class="ph ph-image" style="font-size: 32px; opacity: 0.3;"></i>
+                </div>
+                {% endif %}
+
+                <div class="item-details">
+                    <h4 style="margin: 0; color: var(--accent-cyan);">{{ item.name }}</h4>
+                    <p style="margin: 5px 0; color: var(--text-muted);">
+                        <i class="ph ph-storefront"></i> {{ item.store.name if item.store else 'Sem loja' }}
+                    </p>
+                    <p style="margin: 5px 0; font-size: 20px; font-weight: bold;">
+                        R$ {{ "%.2f"|format(item.price) }}
+                    </p>
+                    <small style="color: {{ 'var(--success)' if item.active else 'var(--danger)' }};">
+                        {{ '● Ativo' if item.active else '○ Inativo' }}
+                    </small>
+                </div>
+
+                <div class="item-actions">
+                    <a href="{{ url_for('admin.edit_item', item_id=item.id) }}" class="icon-btn minimal" title="Editar">
+                        <i class="ph ph-pencil"></i>
+                    </a>
+
+                    <form method="POST" action="{{ url_for('admin.toggle_item', item_id=item.id) }}"
+                        style="display: inline;">
+                        <button type="submit" class="icon-btn minimal"
+                            title="{{ 'Desativar' if item.active else 'Ativar' }}">
+                            <span style="color: {{ 'var(--success)' if item.active else 'var(--text-muted)' }};">
+                                <i class="ph {{ 'ph-toggle-right' if item.active else 'ph-toggle-left' }}"
+                                    style="font-size: 24px;"></i>
+                            </span>
+                        </button>
+                    </form>
+
+                    <form method="POST" action="{{ url_for('admin.delete_item', item_id=item.id) }}"
+                        style="display: inline;" onsubmit="return confirm('Excluir este item?')">
+                        <button type="submit" class="icon-btn minimal" title="Excluir" style="color: var(--danger);">
+                            <i class="ph ph-trash"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <p class="text-muted">Nenhum item cadastrado ainda.</p>
+        {% endfor %}
+    </div>
+
+    <div style="margin-top: 30px;">
+        <a href="{{ url_for('admin.stores') }}" class="btn-secondary">
+            <i class="ph ph-storefront"></i> Gerenciar Lojas
+        </a>
+        <a href="{{ url_for('admin.dashboard') }}" class="btn-secondary" style="margin-left: 10px;">
+            <i class="ph ph-house"></i> Voltar
+        </a>
+    </div>
+</div>
+
+<script>
+    // Search/Filter functionality
+    function filterItems() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const items = document.querySelectorAll('.item-card');
+
+        items.forEach(item => {
+            const name = item.dataset.name;
+            const store = item.dataset.store;
+            const matchesSearch = name.includes(searchTerm) || store.includes(searchTerm);
+
+            item.style.display = matchesSearch ? 'block' : 'none';
+        });
+    }
+
+    // Drag & Drop functionality
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('imageFile');
+
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => {
+            dropZone.classList.add('drag-over');
+        }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => {
+            dropZone.classList.remove('drag-over');
+        }, false);
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        fileInput.files = files;
+        handleFileSelect({ target: { files } });
+    }, false);
+
+    function handleFileSelect(event) {
+        const file = event.target.files[0];
+        if (file) {
+            dropZone.innerHTML = `
+            <i class="ph ph-check-circle" style="font-size: 32px; color: var(--success); display: block; margin-bottom: 10px;"></i>
+            <p style="color: var(--success);">Imagem selecionada: ${file.name}</p>
+            <small>Clique para alterar</small>
+        `;
+        }
+    }
+
+    // Edit item functionality (simple inline edit modal/form)
+    function editItem(id, name, price, storeId, imageUrl) {
+        // For now, we'll use a simple approach - you could enhance with a modal
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.enctype = 'multipart/form-data';
+        form.innerHTML = `
+        <input type="hidden" name="item_id" value="${id}">
+        <input type="text" name="name" value="${name}" required>
+        <input type="number" step="0.01" name="price" value="${price}" required>
+        <select name="store_id" required>
+            {% for store in stores %}
+            <option value="{{ store.id }}" ${storeId == "{{ store.id }}" ? 'selected' : ''}>{{ store.name }}</option>
+            {% endfor %}
+        </select>
+        <input type="text" name="image_url" placeholder="URL da imagem" value="${imageUrl}">
+        <button type="submit" class="btn-neon">Salvar</button>
+    `;
+
+        // This is a simplified version - ideally you'd show a modal or inline edit form
+        // For now, let's just alert the user to manually edit
+        alert(`Para editar "${name}", modifique os campos abaixo e salve.`);
+    }
+</script>
+{% endblock %}

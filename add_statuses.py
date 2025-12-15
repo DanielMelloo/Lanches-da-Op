@@ -1,0 +1,27 @@
+from app import create_app
+from models import db, Status
+
+app = create_app()
+
+with app.app_context():
+    # Check if statuses already exist
+    existing = Status.query.first()
+    if existing:
+        print("[INFO] Statuses already exist.")
+    else:
+        # Create default statuses
+        statuses = [
+            Status(name='Pendente'),
+            Status(name='Confirmado'),
+            Status(name='Enviado'),
+            Status(name='Entregue'),
+            Status(name='Cancelado'),
+        ]
+        
+        for status in statuses:
+            db.session.add(status)
+        
+        db.session.commit()
+        print(f"[OK] {len(statuses)} status criados com sucesso!")
+        for s in statuses:
+            print(f"  - {s.name}")

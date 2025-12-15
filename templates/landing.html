@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Bem-vindo - Lanches da Operação{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top: 50px; padding-bottom: 50px;">
+
+    <!-- Hero Section -->
+    <div class="text-center mb-xl">
+        <h1 class="mb-md" style="font-size: 3rem;">
+            Lanches da <span class="text-accent">Operação</span> 🍔
+        </h1>
+        <p class="text-muted text-xl">
+            Para começar, escolha o seu grupo/unidade:
+        </p>
+    </div>
+
+    <!-- Subsites Selection Grid -->
+    <div class="grid grid-cols-auto">
+        {% for sub in subsites %}
+        <div class="glass-panel text-center flex flex-col items-center justify-between"
+            style="cursor: pointer; transition: transform 0.2s; min-height: 250px;"
+            onclick="window.location.href='{{ url_for('auth.login_subsite', subsite_id=sub.id) }}'">
+
+            <div class="mb-md mt-sm">
+                <i class="ph ph-storefront" style="font-size: 3.5rem; color: var(--accent-cyan);"></i>
+            </div>
+
+            <div class="w-full">
+                <h2 class="text-accent mb-sm">{{ sub.name }}</h2>
+                <p class="text-muted mb-md">Acessar cardápio e fazer pedidos</p>
+            </div>
+
+            <a href="{{ url_for('auth.login_subsite', subsite_id=sub.id) }}" class="btn-neon btn-block">
+                Entrar
+            </a>
+        </div>
+        {% else %}
+        <div class="glass-panel text-center p-6" style="grid-column: 1 / -1;">
+            <i class="ph ph-warning-circle text-muted" style="font-size: 3rem;"></i>
+            <h3 class="mt-md">Nenhuma unidade ativa no momento.</h3>
+            <p class="text-muted">Entre em contato com o suporte.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Admin Links -->
+    <div class="mt-xl pt-md text-center" style="border-top: 1px solid rgba(255,255,255,0.05);">
+        <p class="text-muted mb-md text-sm">Área Administrativa</p>
+        <div class="flex gap-md justify-center">
+            <a href="{{ url_for('auth.login') }}" class="btn-secondary">
+                <i class="ph ph-shield" style="margin-right: 8px;"></i> Login Admin
+            </a>
+            <a href="{{ url_for('auth.login_master') }}" class="btn-secondary">
+                <i class="ph ph-crown" style="margin-right: 8px;"></i> Login Master
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .glass-panel:hover {
+        transform: translateY(-5px);
+        background: rgba(11, 18, 32, 0.95);
+        border-color: var(--accent-cyan);
+        box-shadow: 0 10px 40px -10px rgba(0, 212, 255, 0.3);
+    }
+</style>
+{% endblock %}

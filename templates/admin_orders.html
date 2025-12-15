@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Gerenciar Pedidos{% endblock %}
+
+{% block content %}
+<div class="glass-panel" style="padding: 20px;">
+    <h2>Gerenciar Pedidos</h2>
+
+    <!-- Filters -->
+    <div style="margin-bottom: 20px; display: flex; gap: 10px;">
+        <a href="{{ url_for('admin.orders') }}" class="btn-secondary">Todos</a>
+        {% for status in statuses %}
+        <a href="{{ url_for('admin.orders', status_id=status.id) }}" class="btn-secondary" style="font-size: 0.9em;">
+            {{ status.name }}
+        </a>
+        {% endfor %}
+    </div>
+
+    <!-- Export & Management Controls -->
+    <div class="card" style="margin-bottom: 20px; background: rgba(0, 212, 255, 0.03);">
+        <h4><i class="ph ph-export"></i> Exportar & Gerenciar Pedidos</h4>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px;">
+            <!-- Export Section -->
+            <div>
+                <form method="GET" action="{{ url_for('admin.export_orders') }}"
+                    style="display: flex; flex-direction: column; gap: 10px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div>
+                            <label style="font-size: 0.9em; color: var(--text-muted);">Data Início</label>
+                            <input type="date" name="start_date" id="start_date" required class="form-control">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.9em; color: var(--text-muted);">Data Fim</label>
+                            <input type="date" name="end_date" id="end_date" required class="form-control">
+                        </div>
+                    </div>
+                    <button type="button" onclick="setTodayDates()" class="btn-secondary" style="font-size: 0.9em;">
+                        <i class="ph ph-calendar-check"></i> Hoje
+                    </button>
+                    <button type="submit" class="btn-neon">
+                        <i class="ph ph-file-xls"></i> Gerar Planilha Excel
+                    </button>
+                </form>
+            </div>
+
+            <!-- Delete All Section -->
+            <div style="display: flex; align-items: center; justify-content: center;">
+                <form method="POST" action="{{ url_for('admin.delete_all_orders') }}"
+                    onsubmit="return confirm('⚠️ ATENÇÃO!\n\nIsso irá DELETAR TODOS OS PEDIDOS permanentemente!\n\nTem ABSOLUTA CERTEZA?') && confirm('ÚLTIMA CONFIRMAÇÃO:\n\nTodos os pedidos serão apagados. Continuar?')">
+                    <button type="submit" class="btn-secondary"
+                        style="background: var(--danger); border-color: var(--danger);">
+                        <i class="ph ph-trash"></i> Apagar Todos os Pedidos
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+            <tr style="text-align: left;">
+                <th style="padding: 10px;">#</th>
+                <th style="padding: 10px;">Data</th>
+                <th style="padding: 10px;">Cliente (Nome / Chave / Setor)</th>
+                <th style="padding: 10px;">Total</th>
+                <th style="padding: 10px;">Status</th>
+                <th style="padding: 10px;">Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in orders %}
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <td style="padding: 10px;">{{ order.id }}</td>
+                <td style="padding: 10px;">{{ order.created_at.strftime('%d/%m %H:%M') }}</td>
+                <td style="padding: 10px;">
+                    <div><strong>{{ order.user.name }}</strong></div>
+                    <div style="font-size: 0.8em; color: var(--text-muted);">
+                        Key: {{ order.user.petro_key }} | Setor: {{ order.sector.name if order.sector else '-' }}
+                    </div>
+                </td>
+                <td style="padding: 10px;">R$ {{ "%.2f"|format(order.total_general) }}</td>
+                <td style="padding: 10px;">
+                    <form action="{{ url_for('admin.update_status', order_id=order.id) }}" method="POST">
+                        <select name="status_id" class="input-inline" onchange="this.form.submit()"
+                            style="width: 130px; border-color: {{ 'var(--success)' if order.status.name == 'Entregue' else 'rgba(255,255,255,0.2)' }};">
+                            {% for status in statuses %}
+                            <option value="{{ status.id }}" {% if order.status_id==status.id %}selected{% endif %}>
+                                {{ status.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </form>
+                </td>
+                <td style="padding: 10px; display: flex; gap: 5px;">
+                    <a href="{{ url_for('admin.order_details', order_id=order.id) }}" class="icon-btn minimal"
+                        title="Ver Detalhes">
+                        <i class="ph ph-eye" style="font-size: 20px;"></i>
+                    </a>
+
+                    <form action="{{ url_for('admin.delete_order', order_id=order.id) }}" method="POST"
+                        onsubmit="return confirm('Excluir este pedido permanentemente?');">
+                        <button type="submit" class="icon-btn minimal" title="Excluir" style="color: var(--danger);">
+                            <i class="ph ph-trash" style="font-size: 20px;"></i>
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="text-muted" style="padding: 20px;">Nenhum pedido encontrado.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+    function setTodayDates() {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('start_date').value = today;
+        document.getElementById('end_date').value = today;
+    }
+</script>
+{% endblock %}

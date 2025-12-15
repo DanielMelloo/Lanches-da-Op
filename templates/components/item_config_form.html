@@ -1,0 +1,99 @@
+{# item_config_form.html - Used inside Admin Modal #}
+
+<div id="visual-config-form">
+    <div style="text-align: center; margin-bottom: 20px;">
+        <h3 style="margin: 0;">{{ item.name }}</h3>
+        <p style="font-size: 1.2em; color: var(--success); font-weight: bold;">
+            Base: R$ {{ "%.2f"|format(item.price) }}
+        </p>
+    </div>
+
+    <form id="adminItemForm">
+        <input type="hidden" name="order_id" value="{{ order_id }}">
+        <input type="hidden" name="item_id" value="{{ item.id }}">
+        <input type="hidden" name="order_item_id" value="{{ order_item_id }}"> <!-- If editing existing -->
+        <input type="hidden" name="subitems_choice" id="adminSubitemsChoice">
+
+        <!-- Quantity -->
+        <div style="margin-bottom: 20px; text-align: center;">
+            <label style="margin-right: 10px;">Quantidade:</label>
+            <input type="number" name="quantity" id="adminQuantityInput"
+                value="{{ existing_qty if existing_qty else 1 }}" min="1" class="input-field"
+                style="width: 80px; text-align: center;" onchange="updateAdminTotal()">
+        </div>
+
+        <!-- Sub-items Loop -->
+        {% if item.subitems_json %}
+        <div style="max-height: 400px; overflow-y: auto; padding-right: 5px;">
+            {% for group in item.subitems_json %}
+            {% set outer_loop = loop %}
+            <div class="subitem-section"
+                style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                <h4 style="margin: 0 0 10px 0; font-size: 1em;">
+                    {{ group.title }}
+                    {% if group.type == 'radio' %}
+                    <small style="color: var(--text-muted); font-weight: normal;">(uma opção)</small>
+                    {% else %}
+                    <small style="color: var(--text-muted); font-weight: normal;">(múltiplas)</small>
+                    {% endif %}
+                </h4>
+
+                {% for option in group.options %}
+                {% set option_name = option.name if option is mapping else option %}
+                {% set option_price = option.price if option is mapping else 0 %}
+
+                <div class="option-item"
+                    style="display: flex; align-items: center; justify-content: space-between; padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; flex: 1;">
+                        {% if group.type == 'radio' %}
+                        <input type="radio" name="group_{{ outer_loop.index0 }}" value="{{ option_name }}"
+                            data-price="{{ option_price }}" onchange="updateAdminTotal()">
+                        {% else %}
+                        <input type="checkbox" name="group_{{ outer_loop.index0 }}_{{ loop.index }}"
+                            value="{{ option_name }}" data-price="{{ option_price }}"
+                            data-group="{{ outer_loop.index0 }}" data-option="{{ loop.index }}"
+                            onchange="toggleAdminQtySelector(this); updateAdminTotal()">
+                        {% endif %}
+
+                        <span>
+                            {{ option_name }}
+                            {% if option_price > 0 %}
+                            <span style="color: var(--accent-cyan); font-size: 0.9em;">+R$ {{
+                                "%.2f"|format(option_price) }}</span>
+                            {% endif %}
+                        </span>
+                    </label>
+
+                    {% if group.type == 'checkbox' %}
+                    <div class="qty-selector admin-qty-selector" id="admin_qty_{{ outer_loop.index0 }}_{{ loop.index }}"
+                        style="display: none; align-items: center; gap: 5px;">
+                        <button type="button" class="btn-tiny"
+                            onclick="changeAdminSubitemQty({{ outer_loop.index0 }}, {{ loop.index }}, -1)">-</button>
+                        <span class="qty-value" id="admin_qty_val_{{ outer_loop.index0 }}_{{ loop.index }}"
+                            style="width: 20px; text-align: center;">1</span>
+                        <button type="button" class="btn-tiny"
+                            onclick="changeAdminSubitemQty({{ outer_loop.index0 }}, {{ loop.index }}, 1)">+</button>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Total Display -->
+        <div
+            style="margin-top: 20px; text-align: right; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 10px;">
+            <span style="font-size: 1.2em;">Total Item: <strong style="color: var(--success);" id="adminItemTotal">R$
+                    0.00</strong></span>
+        </div>
+    </form>
+</div>
+
+<!-- Data embedded for JS -->
+<script>
+    window.currentItemBasePrice = {{ item.price }};
+    window.currentItemSubitems = {{ item.subitems_json | tojson if item.subitems_json else '[]' | safe }};
+    window.existingSubitemsData = {{ existing_subitems | tojson if existing_subitems else '[]' | safe }};
+</script>

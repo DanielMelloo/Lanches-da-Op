@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}Checkout - {{ subsite.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-md" style="max-width: 800px;">
+    <div class="text-center mb-lg">
+        <h1><i class="ph ph-shopping-cart"></i> Finalizar Pedido</h1>
+        <p class="text-muted">{{ subsite.name }}</p>
+    </div>
+
+    <!-- Cart Items -->
+    <h3 class="mb-md"><i class="ph ph-list"></i> Itens do Carrinho</h3>
+
+    <div class="flex flex-col gap-md">
+        {% for cart_item in items %}
+        <div class="glass-panel flex flex-col gap-md" style="padding: var(--spacing-md);">
+            <!-- Top Row: Image + Name + Price -->
+            <div class="flex gap-md items-start">
+                <!-- Image -->
+                {% if cart_item.item.image_url %}
+                <img src="{{ cart_item.item.image_url }}" alt="{{ cart_item.item.name }}"
+                    style="width: 80px; height: 80px; object-fit: cover; border-radius: var(--radius-sm);">
+                {% else %}
+                <div
+                    style="width: 80px; height: 80px; background: rgba(255,255,255,0.05); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center;">
+                    <i class="ph ph-image text-muted" style="font-size: 2rem;"></i>
+                </div>
+                {% endif %}
+
+                <!-- Info -->
+                <div class="flex-1">
+                    <h4 class="mb-xs">{{ cart_item.item.name }}</h4>
+                    <p class="text-muted text-sm">R$ {{ "%.2f"|format(cart_item.item.price) }} cada</p>
+
+                    {% if cart_item.subitems %}
+                    <div class="mt-xs pl-2 text-sm text-muted" style="border-left: 2px solid var(--accent-cyan);">
+                        {% for group in cart_item.subitems %}
+                        <div class="mb-xs">
+                            <span class="font-bold text-main">{{ group.group }}:</span>
+                            {% if group.type == 'radio' %}
+                            {{ group.option }}
+                            {% if group.price > 0 %} <span class="text-accent">+R$ {{ "%.2f"|format(group.price)
+                                }}</span> {% endif %}
+                            {% else %}
+                            {% for opt in group.options %}
+                            {{ opt.option }} x{{ opt.qty }}
+                            {% if opt.price > 0 %} <span class="text-accent">+R$ {{ "%.2f"|format(opt.price * opt.qty)
+                                }}</span> {% endif %}
+                            {% if not loop.last %}, {% endif %}
+                            {% endfor %}
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Bottom Row: Controls + Subtotal -->
+            <div class="flex items-center justify-between mt-sm pt-sm"
+                style="border-top: 1px solid rgba(255,255,255,0.1);">
+                <!-- Qty Control -->
+                <form method="POST" action="{{ url_for('user.update_cart') }}" class="flex items-center gap-sm">
+                    <input type="hidden" name="item_id" value="{{ cart_item.item.id }}">
+                    <input type="hidden" name="subsite_id" value="{{ subsite.id }}">
+                    <input type="number" name="quantity" value="{{ cart_item.qty }}" min="1" max="99"
+                        style="width: 60px; text-align: center; margin-bottom: 0;">
+                </form>
+
+                <div class="text-right">
+                    <span class="text-success font-bold text-lg">R$ {{ "%.2f"|format(cart_item.subtotal) }}</span>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex gap-sm">
+                    <a href="{{ url_for('user.edit_cart_item', item_id=cart_item.item.id, subsite_id=subsite.id) }}"
+                        class="btn-icon" style="width: 36px; height: 36px; font-size: 1.2rem;">
+                        <i class="ph ph-pencil-simple"></i>
+                    </a>
+
+                    <form method="POST" action="{{ url_for('user.remove_from_cart') }}">
+                        <input type="hidden" name="item_id" value="{{ cart_item.item.id }}">
+                        <input type="hidden" name="subsite_id" value="{{ subsite.id }}">
+                        <button type="submit" class="btn-icon text-danger"
+                            style="width: 36px; height: 36px; font-size: 1.2rem;">
+                            <i class="ph ph-trash"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Delivery Location -->
+    <h3 class="mt-lg mb-md"><i class="ph ph-map-pin"></i> Local de Entrega</h3>
+    <form method="POST" id="checkoutForm">
+        <label class="block text-muted mb-sm">Selecione onde você está:</label>
+        <select name="sector_id" required class="w-full mb-lg">
+            <option value="">-- Escolha o local --</option>
+            {% for sector in sectors %}
+            <option value="{{ sector.id }}">{{ sector.name }}</option>
+            {% else %}
+            <option value="" disabled>Nenhum local de entrega configurado.</option>
+            {% endfor %}
+        </select>
+
+        <!-- Summary -->
+        <!-- Summary -->
+        <div class="glass-panel">
+            <h3 class="mb-md"><i class="ph ph-receipt"></i> Resumo</h3>
+            <div class="flex flex-col gap-xs mb-md text-muted">
+                <div class="flex justify-between">
+                    <span>Subtotal Itens:</span>
+                    <strong class="text-main">R$ {{ "%.2f"|format(total_items) }}</strong>
+                </div>
+                {% if subsite.tax_mode == 'fixed' and subsite.fixed_tax_value > 0 %}
+                <div class="flex justify-between">
+                    <span>Taxa de Entrega (Fixa):</span>
+                    <strong class="text-main">R$ {{ "%.2f"|format(subsite.fixed_tax_value) }}</strong>
+                </div>
+                {% elif subsite.tax_mode == 'variable' and subsite.calculated_variable_tax %}
+                <div class="flex justify-between">
+                    <span>Taxa de Entrega (Calc.):</span>
+                    <strong class="text-main">R$ {{ "%.2f"|format(subsite.calculated_variable_tax) }}</strong>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="flex justify-between pt-md mt-md text-xl font-bold"
+                style="border-top: 1px solid rgba(255,255,255,0.1);">
+                <span>Total Geral:</span>
+                <span class="text-success">R$ {{ "%.2f"|format(total_with_tax) }}</span>
+            </div>
+
+            <!-- Submit Button (Right Aligned on desktop via flex) -->
+            <div class="mt-lg flex justify-center" style="justify-content: flex-end;">
+                <!-- On mobile we might want full width, but user asked for right alignment. 
+                      However, 'btn-block' forces full width. 
+                      I will use style override for desktop or rely on flex container behavior if btn-block is removed.
+                      User said "joga o botão de confirmar pedido pra direita".
+                 -->
+                <button type="submit" class="btn-neon" style="min-width: 250px;">
+                    <i class="ph ph-check-circle" style="margin-right: 8px;"></i> Confirmar Pedido
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="mobile-menu-overlay animate-fade-in"
+    style="z-index: 9999; align-items: center; justify-content: center; flex-direction: column;">
+    <div class="glass-panel text-center animate-zoom-in" style="padding: 40px; width: 90%; max-width: 400px;">
+        <i class="ph ph-spinner-gap animate-spin" style="font-size: 3rem; color: var(--accent-cyan);"></i>
+        <p class="text-accent font-bold text-lg mt-md">Processando Pedido...</p>
+        <p class="text-muted text-sm mt-xs">Aguarde, gerando pagamento...</p>
+    </div>
+</div>
+
+<style>
+    @keyframes spin {
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+</style>
+
+<script>
+    document.getElementById('checkoutForm').addEventListener('submit', function (e) {
+        var sectorSelect = this.querySelector('select[name="sector_id"]');
+        if (sectorSelect && sectorSelect.value) {
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.classList.add('active');
+            overlay.style.display = 'flex'; // Force flex logic
+        }
+    });
+
+    // Auto-submit quantity changes (optional optimization: debounce if needed, but keeping simple)
+    document.querySelectorAll('input[name="quantity"]').forEach(input => {
+        input.addEventListener('change', () => input.form.submit());
+    });
+</script>
+{% endblock %}

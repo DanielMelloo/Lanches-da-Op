@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}Cardápio - {{ subsite.name }}{% endblock %}
+
+{% block content %}
+<!-- Reorder Modal -->
+{% if last_order %}
+<div id="reorderModal" class="mobile-menu-overlay"
+    style="z-index: 3000; display: flex; align-items: center; justify-content: center;">
+    <div class="glass-panel" style="width: 90%; max-width: 400px; max-height: 90vh; overflow-y: auto;">
+        <h3 class="text-accent text-center">
+            <i class="ph ph-clock-counter-clockwise"></i> Refazer Pedido?
+        </h3>
+        <p class="text-muted text-center mb-md">
+            Do dia {{ last_order.created_at.strftime('%d/%m às %H:%M') }}.
+        </p>
+
+        <div
+            style="background: rgba(255,255,255,0.05); border-radius: var(--radius-sm); padding: var(--spacing-sm); margin-bottom: var(--spacing-md);">
+            {% for order_item in last_order.order_items %}
+            <div class="flex justify-between" style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                <span>{{ order_item.quantity }}x {{ order_item.item.name }}</span>
+                <span class="text-muted">R$ {{ "%.2f"|format(order_item.subtotal) }}</span>
+            </div>
+            {% endfor %}
+            <div class="mt-sm text-right font-bold" style="color: var(--success);">
+                Total: R$ {{ "%.2f"|format(last_order.total_general) }}
+            </div>
+        </div>
+
+        <div class="flex flex-col gap-sm">
+            <button onclick="reorderLast()" class="btn-neon btn-block">
+                <i class="ph ph-check" style="margin-right: 8px;"></i> Adicionar Tudo
+            </button>
+            <button onclick="closeReorderModal()" class="btn-secondary btn-block">
+                Não, obrigado
+            </button>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Header -->
+<div class="text-center mb-md">
+    <h1><i class="ph ph-storefront"></i> {{ subsite.name }}</h1>
+    <p class="text-muted">Escolha seus itens</p>
+</div>
+
+<!-- Search Bar -->
+<div class="search-container">
+    <i class="ph ph-magnifying-glass search-icon"></i>
+    <input type="text" id="searchBar" class="search-input" placeholder="Buscar lache, bebida..."
+        onkeyup="filterItems()">
+</div>
+
+<!-- Items Grid -->
+<div class="grid grid-cols-auto" id="itemsGrid">
+    {% for item in items %}
+    <div class="card item-card" style="padding: 0; overflow: hidden; display: flex; flex-direction: column;"
+        data-name="{{ item.name|lower }}" data-store="{{ item.store.name|lower if item.store else '' }}">
+
+        {% if item.image_url %}
+        <img src="{{ item.image_url }}" alt="{{ item.name }}" class="item-card-image">
+        {% else %}
+        <div class="item-card-image flex justify-center items-center">
+            <i class="ph ph-image text-muted" style="font-size: 3rem; opacity: 0.3;"></i>
+        </div>
+        {% endif %}
+
+        <div style="padding: var(--spacing-md); flex: 1; display: flex; flex-direction: column;">
+            <div class="flex justify-between items-start mb-sm">
+                <h3 class="text-accent" style="font-size: 1.1rem; margin: 0;">{{ item.name }}</h3>
+                <span style="font-weight: bold; color: var(--success); white-space: nowrap;">R$ {{
+                    "%.2f"|format(item.price) }}</span>
+            </div>
+
+            {% if item.store %}
+            <div class="text-muted mb-md" style="font-size: 0.85rem;">
+                <i class="ph ph-tag"></i> {{ item.store.name }}
+            </div>
+            {% endif %}
+
+            <div style="margin-top: auto;">
+                {% if item.subitems_json %}
+                <div class="flex justify-center w-full">
+                    <a href="{{ url_for('user.item_detail', item_id=item.id, subsite_id=subsite.id) }}"
+                        class="btn-secondary btn-block" style="justify-content: center;">
+                        Personalizar
+                    </a>
+                </div>
+                {% else %}
+                <form method="POST" action="{{ url_for('user.add_to_cart') }}" class="flex gap-sm justify-center">
+                    <input type="hidden" name="item_id" value="{{ item.id }}">
+                    <input type="hidden" name="subsite_id" value="{{ subsite.id }}">
+                    <input type="number" name="quantity" value="1" min="1" max="99"
+                        style="width: 70px; text-align: center; margin-bottom: 0;">
+                    <button type="submit" class="btn-neon btn-block">
+                        <i class="ph ph-plus"></i> Adicionar
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center text-muted" style="grid-column: 1/-1; padding: 40px;">
+        <i class="ph ph-smiley-sad" style="font-size: 3rem; margin-bottom: 10px;"></i>
+        <p>Nenhum item disponível no momento.</p>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+    function filterItems() {
+        const searchTerm = document.getElementById('searchBar').value.toLowerCase();
+        const items = document.querySelectorAll('.item-card');
+
+        items.forEach(item => {
+            const name = item.dataset.name;
+            const store = item.dataset.store;
+
+            if (name.includes(searchTerm) || store.includes(searchTerm)) {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+
+    // Modal Logic
+    function closeReorderModal() {
+        const modal = document.getElementById('reorderModal');
+        if (modal) {
+            modal.style.display = 'none';
+            sessionStorage.setItem('reorderModalSeen_{{ subsite.id }}', 'true');
+        }
+    }
+
+    function reorderLast() {
+        {% if last_order %}
+        fetch("{{ url_for('user.reorder', order_id=last_order.id) }}", { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    sessionStorage.setItem('reorderModalSeen_{{ subsite.id }}', 'true');
+                    location.reload();
+                } else {
+                    alert('Erro: ' + data.message);
+                }
+            })
+            .catch(() => alert('Erro na requisição'));
+        {% endif %}
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const modal = document.getElementById('reorderModal');
+        if (modal && !sessionStorage.getItem('reorderModalSeen_{{ subsite.id }}')) {
+            modal.style.display = 'flex';
+        } else if (modal) {
+            modal.style.display = 'none';
+        }
+    });
+</script>
+{% endblock %}

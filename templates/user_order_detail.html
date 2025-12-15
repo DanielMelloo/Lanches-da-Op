@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% block title %}Detalhes do Pedido #{{ order.id }}{% endblock %}
+
+{% block content %}
+<style>
+    @keyframes pulse-skeleton {
+        0% {
+            opacity: 0.5;
+        }
+
+        50% {
+            opacity: 1;
+        }
+
+        100% {
+            opacity: 0.5;
+        }
+    }
+</style>
+<div class="container" style="max-width: 800px; margin: 30px auto;">
+    <div style="margin-bottom: 20px;">
+        <a href="{{ url_for('user.orders') }}" class="btn-secondary"
+            style="display: inline-flex; align-items: center; gap: 8px;">
+            <i class="ph ph-arrow-left"></i> Voltar
+        </a>
+    </div>
+
+    <div class="glass-panel" style="padding: 30px; border-top: 4px solid {{ order.status.color }};">
+        <!-- Header -->
+        <!-- Header -->
+        <div class="flex-responsive mb-lg">
+            <div>
+                <h2 class="text-accent mb-xs">Detalhes do Pedido</h2>
+                <p class="text-muted text-sm mb-xs">
+                    {{ order.created_at.strftime('%d/%m/%Y às %H:%M') }}
+                </p>
+                <div class="inline-block px-3 py-1 rounded text-sm font-bold"
+                    style="background: {{ order.status.color }}33; color: {{ order.status.color }}; border: 1px solid {{ order.status.color }}66;">
+                    {{ order.status.name }}
+                </div>
+            </div>
+            <div class="text-right-tablet">
+                <p class="text-success font-bold text-2xl">
+                    R$ {{ "%.2f"|format(order.total_general) }}
+                </p>
+                <p class="text-muted text-sm">Total Geral</p>
+            </div>
+        </div>
+
+        <!-- Payment Section (PIX) -->
+        {% if order.payment_status == 'pending' and order.payment_required and order.pix_code_copy_paste %}
+        <div class="glass-panel text-center mb-lg"
+            style="border: 1px solid var(--warning); background: rgba(255, 193, 7, 0.05);">
+            <h3 class="text-warning mt-sm mb-sm"><i class="ph ph-qr-code"></i> Pagamento PIX</h3>
+            <p class="text-muted mb-md">Escaneie o QR Code ou copie o código abaixo:</p>
+
+            <!-- QR Code Container -->
+            <div class="flex justify-center mb-md relative">
+                <div id="qrcode" class="bg-white p-6 rounded-xl shadow-lg relative flex items-center justify-center"
+                    style="background: white; padding: 30px; border-radius: 12px;">
+                    <!-- Skeleton -->
+                    <div class="skeleton-qr"
+                        style="width: 300px; height: 300px; background: #eee; animation: pulse-skeleton 1.5s infinite;">
+                    </div>
+
+                    <!-- Center Logo Overlay -->
+                    <div id="qrLogo"
+                        class="absolute bg-white rounded-full p-1 flex items-center justify-center shadow-md hidden"
+                        style="width: 48px; height: 48px; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10;">
+                        <i class="ph-fill ph-qr-code text-accent" style="font-size: 28px; color: #7c5cff;"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Copy Paste -->
+            <div class="text-left mb-md">
+                <label class="text-muted text-sm mb-xs block">Pix Copia e Cola:</label>
+                <div class="flex flex-col gap-sm">
+                    <div class="relative w-full">
+                        <textarea id="pixCode" readonly
+                            class="w-full text-sm font-mono p-3 rounded bg-dark border border-white-10 text-white"
+                            style="resize: none; height: 80px; word-break: break-all;">{{ order.pix_code_copy_paste }}</textarea>
+                    </div>
+                    <button onclick="copyPix()" class="btn-neon btn-block">
+                        <i class="ph ph-copy"></i> Copiar Código
+                    </button>
+                </div>
+            </div>
+
+            <button onclick="window.location.reload()" class="btn-secondary btn-block">
+                <i class="ph ph-arrows-clockwise"></i> Já paguei!
+            </button>
+        </div>
+        {% endif %}
+
+        <!-- Items List -->
+        <h3 style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; margin-bottom: 20px;">Itens do
+            Pedido</h3>
+        <div style="display: grid; gap: 15px;">
+            {% for item in order.order_items %}
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 15px; border-radius: 8px;">
+                <div style="flex: 1;">
+                    <div style="font-weight: bold; font-size: 1.1em;">{{ item.quantity }}x {{ item.item.name }}</div>
+                    {% if item.subitems_json %}
+                    <div style="font-size: 0.9em; color: var(--text-muted); margin-top: 5px;">
+                        {% for group in item.subitems_json %}
+                        {% for opt in group.options %}
+                        {% if opt.selected or opt.qty > 0 %}
+                        • {{ opt.name }} {{ '(x' + opt.qty|string + ')' if opt.qty > 1 else '' }}<br>
+                        {% endif %}
+                        {% endfor %}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                <div style="font-weight: bold;">
+                    R$ {{ "%.2f"|format(item.subtotal) }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Totals Breakdown -->
+        <div class="mt-lg pt-md" style="border-top: 1px solid rgba(255,255,255,0.1);">
+            <div class="flex justify-between mb-sm text-muted">
+                <span>Subtotal Itens:</span>
+                <span>R$ {{ "%.2f"|format(order.total_items) }}</span>
+            </div>
+            {% if order.tax_fixed > 0 %}
+            <div class="flex justify-between mb-sm text-muted">
+                <span>Taxa Fixa:</span>
+                <span>R$ {{ "%.2f"|format(order.tax_fixed) }}</span>
+            </div>
+            {% endif %}
+            {% if order.service_fee > 0 %}
+            <div class="flex justify-between mb-sm text-muted">
+                <span>Taxa Serviço:</span>
+                <span>R$ {{ "%.2f"|format(order.service_fee) }}</span>
+            </div>
+            {% endif %}
+            <div class="flex justify-between mt-md text-xl font-bold text-main">
+                <span>Total:</span>
+                <span>R$ {{ "%.2f"|format(order.total_general) }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- QRCode Library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<script>
+    function copyPix() {
+        var copyText = document.getElementById("pixCode");
+        copyText.select();
+        copyText.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(copyText.value);
+        alert("Código PIX copiado!");
+    }
+
+    // Render QR Code if needed
+    document.addEventListener("DOMContentLoaded", function () {
+        var pixCode = document.getElementById("pixCode");
+        var container = document.getElementById("qrcode");
+
+        if (pixCode && container) {
+            // Clear skeleton
+            container.innerHTML = "";
+
+            new QRCode(container, {
+                text: pixCode.value,
+                width: 300, // Larger size for better resolution
+                height: 300,
+                colorDark: "#000000", // Max contrast (Black)
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H // High Error Correction (allows for logo overlay)
+            });
+
+            // Show logo after generating
+            document.getElementById('qrLogo').classList.remove('hidden');
+        }
+    });
+
+    // POLLING FOR PAYMENT
+    {% if order.payment_status == 'pending' and order.pix_charge_id %}
+    let pollInterval = setInterval(checkPaymentStatus, 5000);
+
+    async function checkPaymentStatus() {
+        try {
+            const response = await fetch("{{ url_for('user.check_payment_status', order_id=order.id) }}");
+            const data = await response.json();
+
+            if (data.paid) {
+                clearInterval(pollInterval);
+                // Visual success feedback
+                const statusBadge = document.querySelector('.inline-block.px-3.py-1');
+                if (statusBadge) {
+                    statusBadge.innerText = "Pagamento Confirmado";
+                    statusBadge.style.color = "#00E676";
+                    statusBadge.style.borderColor = "#00E676";
+                    statusBadge.style.background = "rgba(0, 230, 118, 0.1)";
+                }
+
+                // Show toast/alert
+                const qrPanel = document.getElementById('qrcode').closest('.glass-panel');
+                if (qrPanel) {
+                    qrPanel.innerHTML = `
+                        <div class="text-center py-5">
+                            <i class="ph-fill ph-check-circle text-success" style="font-size: 64px;"></i>
+                            <h3 class="text-white mt-3">Pagamento Recebido!</h3>
+                            <p class="text-muted">Atualizando pedido...</p>
+                        </div>
+                     `;
+                }
+
+                // Reload after short delay
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            }
+        } catch (e) {
+            console.error("Payment poll error:", e);
+        }
+    }
+    {% endif %}
+</script>
+{% endblock %}

@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+.venv/
+env/
+ENV/
+
+# VS Code
+.vscode/
+
+# Environment Variables
+.env
+.env.local
+
+# Database (if utilizing SQLite)
+*.sqlite3
+*.db
+instance/
+
+# Project Specific Logs & Debug
+payment_debug.log
+debug_output.txt
+admin_debug.txt
+scraped_menu.txt
+temp_scrape.html
+*.log
+
+# Certificates (Security)
+certs/
+
+# Uploads (if not tracking user content)
+static/uploads/
+
+# OS
+.DS_Store
+Thumbs.db

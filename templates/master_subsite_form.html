@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Editar' if subsite else 'Novo' }} Subsite{% endblock %}
+
+{% block content %}
+<div class="glass-panel" style="padding: 30px; max-width: 600px; margin: 0 auto;">
+    <h2>{{ 'Editar' if subsite else 'Novo' }} Subsite</h2>
+    
+    <form method="POST">
+        <div class="form-group">
+            <label for="name">Nome do Subsite (Ex: G1, Lanchonete A)</label>
+            <input type="text" id="name" name="name" value="{{ subsite.name if subsite else '' }}" required placeholder="Digite o nome do subsite">
+        </div>
+
+        {% if subsite %}
+        <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+            <input type="checkbox" id="active" name="active" style="width: auto; margin: 0;" {% if subsite.active %}checked{% endif %}>
+            <label for="active" style="margin: 0; cursor: pointer;">Subsite Ativo</label>
+        </div>
+        {% endif %}
+
+        <div style="display: flex; gap: 10px; margin-top: 30px;">
+            <button type="submit" class="btn-neon" style="flex: 1;">Salvar</button>
+            <a href="{{ url_for('master.manage_subsites') }}" class="btn-secondary" style="flex: 1; text-align: center;">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% if orders %}
+{% for order in orders %}
+<div class="glass-panel order-card mb-md p-md relative animate-fade-in"
+    onclick="window.location.href='{{ url_for('user.order_detail', order_id=order.id) }}'"
+    style="cursor: pointer; transition: transform 0.2s; border-left: 4px solid {{ 'var(--success)' if order.payment_status == 'approved' else 'var(--warning)' }}">
+
+    <div class="flex justify-between items-start mb-sm">
+        <div>
+            <h4 style="margin: 0; font-size: 1.1em; color: var(--text-main);">Pedido #{{ order.id }}</h4>
+            <div class="text-muted text-sm flex items-center gap-xs mt-xs">
+                <i class="ph ph-storefront"></i> {{ order.subsite.name }}
+            </div>
+        </div>
+        <div class="text-right">
+            <div style="font-weight: bold; color: var(--accent-cyan); font-size: 1.1em;">
+                R$ {{ "%.2f"|format(order.total_general) }}
+            </div>
+            <div class="text-muted text-xs mt-xs">
+                {{ order.created_at.strftime('%d/%m/%Y %H:%M') }}
+            </div>
+        </div>
+    </div>
+
+    <div class="flex justify-between items-center mt-sm pt-sm" style="border-top: 1px solid rgba(255,255,255,0.05);">
+        <div class="flex items-center gap-sm">
+            <span
+                class="status-badge {{ 'status-success' if order.payment_status == 'approved' else 'status-pending' }}">
+                {{ order.status.name }}
+            </span>
+        </div>
+        <i class="ph-bold ph-caret-right text-muted"></i>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Pagination Controls -->
+{% if pagination.pages > 1 %}
+<div class="flex justify-center gap-sm mt-lg">
+    {% if pagination.has_prev %}
+    <button onclick="loadOrders({{ pagination.prev_num }})" class="btn-secondary"
+        style="height: 36px; padding: 0 15px;">
+        <i class="ph-bold ph-caret-left"></i> Anterior
+    </button>
+    {% endif %}
+
+    <span class="flex items-center text-muted text-sm">
+        Página {{ pagination.page }} de {{ pagination.pages }}
+    </span>
+
+    {% if pagination.has_next %}
+    <button onclick="loadOrders({{ pagination.next_num }})" class="btn-secondary"
+        style="height: 36px; padding: 0 15px;">
+        Próxima <i class="ph-bold ph-caret-right"></i>
+    </button>
+    {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="glass-panel text-center py-xl">
+    <div
+        style="width: 80px; height: 80px; background: rgba(255,255,255,0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+        <i class="ph-duotone ph-receipt" style="font-size: 40px; color: var(--text-muted);"></i>
+    </div>
+    <h3>Nenhum pedido encontrado</h3>
+    <p class="text-muted mb-lg">Você ainda não realizou nenhum pedido com este filtro.</p>
+    <a href="{{ url_for('user.dashboard') }}" class="btn-neon">
+        Fazer um Pedido
+    </a>
+</div>
+{% endif %}

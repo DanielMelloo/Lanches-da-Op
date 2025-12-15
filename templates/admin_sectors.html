@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Gerenciar Locais de Entrega{% endblock %}
+
+{% block content %}
+<style>
+    .sector-card {
+        background: var(--card-bg);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        transition: all 0.2s;
+    }
+
+    .sector-card:hover {
+        border-color: var(--accent-cyan);
+        background: rgba(255, 255, 255, 0.02);
+    }
+
+    .sector-icon {
+        width: 50px;
+        height: 50px;
+        background: rgba(0, 212, 255, 0.1);
+        color: var(--accent-cyan);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+    }
+
+    .sector-icon.inactive {
+        background: rgba(255, 59, 48, 0.1);
+        color: var(--danger);
+    }
+
+    .inline-edit {
+        background: transparent;
+        border: 1px solid transparent;
+        color: white;
+        font-size: 1.1em;
+        font-weight: bold;
+        padding: 5px 10px;
+        border-radius: 4px;
+        transition: all 0.2s;
+        width: 100%;
+        max-width: 300px;
+    }
+
+    .inline-edit:hover,
+    .inline-edit:focus {
+        background: rgba(0, 0, 0, 0.3);
+        border-color: var(--accent-cyan);
+        outline: none;
+    }
+
+    .icon-btn.minimal {
+        background: transparent;
+        border: none;
+        padding: 5px;
+        opacity: 0.7;
+        transition: all 0.2s;
+    }
+
+    .icon-btn.minimal:hover {
+        opacity: 1;
+        transform: scale(1.1);
+        background: transparent;
+        border: none;
+    }
+</style>
+
+<div class="glass-panel" style="padding: 30px;">
+    <h2><i class="ph ph-map-pin"></i> Gerenciar Locais de Entrega</h2>
+    <p class="text-muted">Locais disponíveis para o cliente selecionar no checkout.</p>
+
+    <!-- New Sector Form -->
+    <div class="card" style="margin: 30px 0;">
+        <h3><i class="ph ph-plus-circle"></i> Novo Local</h3>
+        <form method="POST" style="display: flex; gap: 15px; align-items: flex-end;">
+            <div style="flex: 1;">
+                <label>Nome do Local (Ex: Prédio Administrativo)</label>
+                <input type="text" name="name" placeholder="Digite o nome do local..." required>
+            </div>
+            <button type="submit" class="btn-neon"><i class="ph ph-floppy-disk"></i> Criar</button>
+        </form>
+    </div>
+
+    <!-- Sectors List -->
+    <h3><i class="ph ph-list"></i> Locais Cadastrados</h3>
+
+    {% if not sectors %}
+    <div
+        style="padding: 20px; text-align: center; color: var(--text-muted); border: 1px dashed rgba(255,255,255,0.1); border-radius: 8px;">
+        Nenhum local cadastrado ainda.
+    </div>
+    {% endif %}
+
+    {% for sector in sectors %}
+    <div class="sector-card">
+        <div class="sector-icon {{ '' if sector.active else 'inactive' }}">
+            <i class="ph ph-map-pin"></i>
+        </div>
+
+        <div style="flex: 1;">
+            <form method="POST" action="{{ url_for('admin.sectors') }}" id="edit-form-{{ sector.id }}">
+                <input type="hidden" name="action" value="update_name">
+                <input type="hidden" name="sector_id" value="{{ sector.id }}">
+                <input type="text" name="name" value="{{ sector.name }}" class="inline-edit"
+                    onblur="this.form.submit()">
+            </form>
+            <span style="font-size: 0.8em; color: var(--text-muted);">
+                {{ 'Ativo' if sector.active else 'Inativo - Não aparece no checkout' }}
+            </span>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+            <!-- Toggle Active -->
+            <form method="POST" action="{{ url_for('admin.sectors') }}" style="display: inline;">
+                <input type="hidden" name="action" value="toggle_active">
+                <input type="hidden" name="sector_id" value="{{ sector.id }}">
+                <button type="submit" class="icon-btn minimal" title="{{ 'Desativar' if sector.active else 'Ativar' }}">
+                    {% if sector.active %}
+                    <i class="ph ph-toggle-right" style="font-size: 24px; color: var(--success);"></i>
+                    {% else %}
+                    <i class="ph ph-toggle-left" style="font-size: 24px; color: var(--text-muted);"></i>
+                    {% endif %}
+                </button>
+            </form>
+
+            <!-- Delete -->
+            <form method="POST" action="{{ url_for('admin.sectors') }}" style="display: inline;"
+                onsubmit="return confirm('Tem certeza que deseja excluir este local?');">
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="sector_id" value="{{ sector.id }}">
+                <button type="submit" class="icon-btn minimal" title="Excluir" style="color: var(--danger);">
+                    <i class="ph ph-trash"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

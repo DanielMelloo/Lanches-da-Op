@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Master Admin - Lanches OP{% endblock %}
+
+{% block content %}
+<div class="glass-panel" style="padding: 30px;">
+    <h2>Painel Master</h2>
+    <p class="text-muted">Controle Global do Sistema</p>
+
+    <div
+        style="margin-top: 30px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+        <div class="card">
+            <h3 class="text-accent">Subsites</h3>
+            <p>Gerenciar filas G1, G2...</p>
+            <a href="{{ url_for('master.manage_subsites') }}" class="btn-neon"
+                style="display: flex; justify-content: center; align-items: center; text-align: center;">Gerenciar</a>
+        </div>
+
+        <div class="card">
+            <h3>Usuários</h3>
+            <p>Controle global de usuários</p>
+            <a href="{{ url_for('master.manage_users') }}" class="btn-secondary"
+                style="display: flex; justify-content: center; align-items: center; text-align: center;">Acessar</a>
+        </div>
+
+        <div class="card">
+            <h3>Pagamentos</h3>
+            <p>Configurações Efí/PIX</p>
+            <a href="{{ url_for('admin.efi_config') }}" class="btn-secondary"
+                style="display: flex; justify-content: center; align-items: center; text-align: center;">Configurar</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

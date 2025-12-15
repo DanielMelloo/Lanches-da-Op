@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Acesso - Lanches OP{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: center; align-items: center; min-height: 80vh;">
+    <div class="glass-panel" style="padding: 40px; width: 100%; max-width: 400px;">
+        <h2 style="text-align: center; margin-bottom: 10px;">Bem-vindo</h2>
+        <p class="text-muted" style="text-align: center; margin-bottom: 30px;">Digite sua chave para entrar</p>
+
+        <form method="POST">
+            <div class="form-group">
+                <label for="petro_key">Chave Petrobras</label>
+                <input type="text" id="petro_key" name="petro_key" placeholder="ABCD" maxlength="4" required
+                    style="text-transform: uppercase; font-size: 1.2em; letter-spacing: 2px; text-align: center;">
+            </div>
+
+            <button type="submit" class="btn-neon" style="width: 100%; margin-top: 10px;">
+                <i class="ph-bold ph-sign-in"></i> Entrar
+            </button>
+        </form>
+
+        <div style="margin-top: 30px; text-align: center; font-size: 0.9em;">
+            <p class="text-muted">
+                Primeiro acesso? <a href="{{ url_for('auth.register') }}"
+                    style="color: var(--accent-cyan); font-weight: bold;">Cadastre-se</a>
+            </p>
+            <div style="margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px;">
+                <a href="{{ url_for('auth.login_admin') }}" class="text-muted"
+                    style="text-decoration: none; opacity: 0.6;">
+                    <i class="ph ph-shield"></i> Acesso Administrativo
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

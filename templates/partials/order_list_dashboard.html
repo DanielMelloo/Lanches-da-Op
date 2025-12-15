@@ -1,0 +1,29 @@
+{% if orders %}
+{% for order in orders %}
+<div class="glass-panel"
+    style="padding: 15px; margin-bottom: 10px; border-left: 4px solid var(--accent-cyan); cursor: pointer;"
+    onclick="window.location.href='{{ url_for('user.order_detail', order_id=order.id) }}'">
+    <div class="flex justify-between mb-xs">
+        <span style="font-weight: bold; font-size: 0.9em;">#{{ order.id }} - {{ order.subsite.name }}</span>
+        <span style="font-size: 0.8em; color: var(--text-muted);">{{ order.created_at.strftime('%d/%m %H:%M') }}</span>
+    </div>
+    <div class="flex justify-between items-center">
+        <span style="font-size: 0.9em;">
+            <span
+                class="status-indicator {{ 'status-success' if order.payment_status == 'approved' else 'status-pending' }}"></span>
+            {{ order.status.name }}
+        </span>
+        <span style="font-weight: bold; color: var(--accent-cyan);">R$ {{ "%.2f"|format(order.total_general) }}</span>
+    </div>
+</div>
+{% endfor %}
+
+<a href="{{ url_for('user.orders') }}" class="btn-secondary btn-block mt-sm" style="font-size: 0.9em; height: 40px;">
+    Ver Todos os Pedidos
+</a>
+{% else %}
+<div class="text-center text-muted py-md">
+    <i class="ph-duotone ph-receipt" style="font-size: 32px; opacity: 0.5;"></i>
+    <p class="mt-sm">Nenhum pedido recente</p>
+</div>
+{% endif %}

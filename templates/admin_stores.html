@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}Gerenciar Lojas{% endblock %}
+
+{% block content %}
+<style>
+    .store-card {
+        background: var(--card-bg);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        transition: all 0.2s;
+    }
+
+    .store-card:hover {
+        border-color: var(--accent-cyan);
+        background: rgba(255, 255, 255, 0.02);
+    }
+
+    .store-icon {
+        width: 50px;
+        height: 50px;
+        background: rgba(0, 255, 136, 0.1);
+        color: var(--success);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+    }
+
+    .store-icon.inactive {
+        background: rgba(255, 59, 48, 0.1);
+        color: var(--danger);
+    }
+
+    .inline-edit {
+        background: transparent;
+        border: 1px solid transparent;
+        color: white;
+        font-size: 1.1em;
+        font-weight: bold;
+        padding: 5px 10px;
+        border-radius: 4px;
+        transition: all 0.2s;
+        width: 100%;
+        max-width: 300px;
+    }
+
+    .inline-edit:hover,
+    .inline-edit:focus {
+        background: rgba(0, 0, 0, 0.3);
+        border-color: var(--accent-cyan);
+        outline: none;
+    }
+
+    .icon-btn.minimal {
+        background: transparent;
+        border: none;
+        padding: 5px;
+        opacity: 0.7;
+        transition: all 0.2s;
+    }
+
+    .icon-btn.minimal:hover {
+        opacity: 1;
+        transform: scale(1.1);
+        background: transparent;
+        border: none;
+    }
+</style>
+
+<div class="glass-panel" style="padding: 30px;">
+    <h2><i class="ph ph-storefront"></i> Gerenciar Lojas</h2>
+    <p class="text-muted">Categorias de produtos (ex: Lanches, Bebidas)</p>
+
+    <!-- New Store Form -->
+    <div class="card" style="margin: 30px 0;">
+        <h3><i class="ph ph-plus-circle"></i> Nova Loja</h3>
+        <form method="POST" style="display: flex; gap: 15px; align-items: flex-end;">
+            <div style="flex: 1;">
+                <label>Nome da Loja</label>
+                <input type="text" name="name" placeholder="Ex: Bebidas Geladas" required>
+            </div>
+            <button type="submit" class="btn-neon"><i class="ph ph-floppy-disk"></i> Criar</button>
+        </form>
+    </div>
+
+    <!-- Stores List -->
+    <h3><i class="ph ph-list"></i> Lojas Cadastradas</h3>
+
+    {% for store in stores %}
+    <div class="store-card">
+        <div class="store-icon {{ '' if store.active else 'inactive' }}">
+            <i class="ph ph-storefront"></i>
+        </div>
+
+        <div style="flex: 1;">
+            <form method="POST" style="margin: 0;">
+                <input type="hidden" name="store_id" value="{{ store.id }}">
+                <input type="text" name="name" value="{{ store.name }}" class="inline-edit"
+                    onchange="this.form.submit()" title="Clique para editar">
+            </form>
+            <small style="color: var(--text-muted); margin-left: 10px;">
+                {{ '● Visível no cardápio' if store.active else '○ Oculta' }}
+            </small>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+            <!-- Status Toggle -->
+            <form method="POST" style="margin: 0;">
+                <input type="hidden" name="store_id" value="{{ store.id }}">
+                <input type="hidden" name="action" value="toggle_active">
+                <button type="submit" class="icon-btn minimal" title="{{ 'Desativar' if store.active else 'Ativar' }}">
+                    <i class="ph {{ 'ph-toggle-right' if store.active else 'ph-toggle-left' }}"
+                        style="font-size: 24px; color: {{ 'var(--success)' if store.active else 'var(--text-muted)' }};"></i>
+                </button>
+            </form>
+
+            <!-- Delete -->
+            <!-- Delete -->
+            <form method="POST" style="margin: 0;"
+                onsubmit="return confirm('ATENÇÃO: Excluir esta loja apagará TODOS os itens associados a ela!\n\nTem certeza?')">
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="store_id" value="{{ store.id }}">
+                <button type="submit" class="icon-btn minimal" title="Excluir">
+                    <i class="ph ph-trash" style="font-size: 24px; color: var(--danger);"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+    {% else %}
+    <p class="text-muted">Nenhuma loja cadastrada.</p>
+    {% endfor %}
+
+    <div style="margin-top: 30px;">
+        <a href="{{ url_for('admin.items') }}" class="btn-secondary">
+            <i class="ph ph-arrow-left"></i> Voltar para Itens
+        </a>
+    </div>
+</div>
+{% endblock %}

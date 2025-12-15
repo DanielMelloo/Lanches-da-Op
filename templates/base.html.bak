@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{% block title %}Lanches da Operação{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <!-- Brand -->
+        <a href="{{ url_for('index') }}" class="nav-brand">
+            Lanches OP
+        </a>
+
+        <!-- Mobile Menu Button -->
+        <button id="mobileMenuBtn" class="btn-icon mobile-only" onclick="toggleMobileMenu()" aria-label="Menu">
+            <i class="ph ph-list"></i>
+        </button>
+
+        <!-- Desktop Navigation -->
+        <div class="desktop-only desktop-nav">
+            {% if current_user.is_authenticated %}
+            <!-- Nav Links -->
+            <div class="flex items-center gap-md">
+                {% if current_user.role in ['admin', 'admin_master'] %}
+                <a href="{{ url_for('admin.dashboard') if current_user.role == 'admin' else url_for('master.dashboard') }}"
+                    class="nav-link">
+                    <i class="ph ph-shield"></i> Admin
+                </a>
+                <a href="{{ url_for('user.dashboard') }}" class="nav-link">
+                    <i class="ph ph-hamburger"></i> Pedidos
+                </a>
+                <a href="{{ url_for('user.orders') }}" class="nav-link">
+                    <i class="ph ph-receipt"></i> Meus Pedidos
+                </a>
+                {% else %}
+                <a href="{{ url_for('user.dashboard') }}" class="nav-link">Início</a>
+                <a href="{{ url_for('user.orders') }}" class="nav-link">Meus Pedidos</a>
+                {% endif %}
+            </div>
+
+            <!-- User Info & Cart -->
+            <div class="flex items-center gap-md">
+                <!-- User Key -->
+                <div class="flex items-center"
+                    style="background: rgba(255,255,255,0.05); padding: 5px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                    <i class="ph ph-user text-muted" style="margin-right: 8px;"></i>
+                    <span style="font-weight: bold;">{{ current_user.petro_key }}</span>
+                </div>
+
+                <!-- Desktop Cart Button -->
+                {% set target_subsite = session.get('target_subsite_id') or session.get('master_subsite_id') %}
+                {% if request.endpoint and 'user.' in request.endpoint and request.view_args.get('subsite_id') %}
+                {% set current_subsite_id = request.view_args.get('subsite_id') %}
+                {% set cart = session.get('cart', {}) %}
+                {% set subsite_cart = cart.get(current_subsite_id|string, {}) %}
+                {% set cart_count = subsite_cart.keys()|length %}
+
+                <a href="{{ url_for('user.checkout', subsite_id=current_subsite_id) }}" class="btn-neon"
+                    style="height: 36px; padding: 0 15px; font-size: 0.9em;">
+                    <i class="ph ph-shopping-cart" style="margin-right: 8px;"></i>
+                    Carrinho
+                    {% if cart_count > 0 %}
+                    <span
+                        style="background: white; color: var(--accent-purple); padding: 0 6px; border-radius: 10px; font-size: 0.8em; font-weight: bold; margin-left: 6px;">
+                        {{ cart_count }}
+                    </span>
+                    {% endif %}
+                </a>
+                {% endif %}
+
+                <!-- Logout -->
+                <a href="{{ url_for('auth.logout') }}" class="btn-icon" style="font-size: 1.25rem;" title="Sair">
+                    <i class="ph ph-sign-out"></i>
+                </a>
+            </div>
+            {% else %}
+            <a href="{{ url_for('auth.login') }}" class="btn-secondary">Entrar</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-md">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+
+        <!-- Bottom padding for mobile floating cart -->
+        <div style="height: 80px;" class="mobile-only"></div>
+    </div>
+
+    <!-- Mobile Menu Sidebar -->
+    <div id="mobileMenuOverlay" class="mobile-menu-overlay" onclick="toggleMobileMenu()"></div>
+    <div id="mobileMenu" class="mobile-menu">
+        <div class="mobile-menu-header">
+            <h3 style="margin: 0; color: var(--accent-cyan);">Menu</h3>
+            <button onclick="toggleMobileMenu()" class="btn-icon" aria-label="Fechar Menu">
+                <i class="ph ph-x"></i>
+            </button>
+        </div>
+
+        <div class="mobile-menu-content">
+            {% if current_user.is_authenticated %}
+            <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <div class="flex items-center gap-sm mb-md">
+                    <i class="ph ph-user text-accent"></i>
+                    <span style="font-weight: bold;">{{ current_user.petro_key }}</span>
+                </div>
+                {% if current_user.name %}
+                <div class="text-muted" style="font-size: 0.9em;">{{ current_user.name }}</div>
+                {% endif %}
+            </div>
+
+            <div class="flex flex-col">
+                {% if current_user.role in ['admin', 'admin_master'] %}
+                <a href="{{ url_for('admin.dashboard') if current_user.role == 'admin' else url_for('master.dashboard') }}"
+                    class="nav-link-mobile">
+                    <i class="ph ph-shield"></i> Admin
+                </a>
+                <a href="{{ url_for('user.dashboard') }}" class="nav-link-mobile">
+                    <i class="ph ph-hamburger"></i> Pedidos
+                </a>
+                {% else %}
+                <a href="{{ url_for('user.dashboard') }}" class="nav-link-mobile">
+                    <i class="ph ph-house"></i> Início
+                </a>
+                {% endif %}
+
+                <a href="{{ url_for('user.orders') }}" class="nav-link-mobile">
+                    <i class="ph ph-receipt"></i> Meus Pedidos
+                </a>
+
+                <a href="{{ url_for('auth.logout') }}" class="nav-link-mobile"
+                    style="color: var(--danger); margin-top: 20px;">
+                    <i class="ph ph-sign-out" style="color: var(--danger);"></i> Sair
+                </a>
+            </div>
+            {% else %}
+            <a href="{{ url_for('auth.login') }}" class="btn-neon w-full">Entrar</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Floating Cart Button (Mobile Only) -->
+    {% if current_user.is_authenticated %}
+    {% if request.endpoint and 'user.' in request.endpoint and request.view_args.get('subsite_id') and request.endpoint
+    != 'user.checkout' %}
+    {% set current_subsite_id = request.view_args.get('subsite_id') %}
+    {% set cart = session.get('cart', {}) %}
+    {% set subsite_cart = cart.get(current_subsite_id|string, {}) %}
+    {% set cart_count = subsite_cart.keys()|length %}
+
+    {% if cart_count > 0 %}
+    <a href="{{ url_for('user.checkout', subsite_id=current_subsite_id) }}" class="floating-cart mobile-only"
+        aria-label="Carrinho">
+        <i class="ph-fill ph-shopping-cart"></i>
+        <span class="cart-badge">{{ cart_count }}</span>
+    </a>
+    {% endif %}
+    {% endif %}
+    {% endif %}
+
+    <script>
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            const overlay = document.getElementById('mobileMenuOverlay');
+
+            menu.classList.toggle('active');
+            overlay.classList.toggle('active');
+
+            // Prevent body scroll when menu is open
+            if (menu.classList.contains('active')) {
+                document.body.style.overflow = 'hidden';
+            } else {
+                document.body.style.overflow = '';
+            }
+        }
+    </script>
+
+    <!-- Toast scripts or other JS -->
+    <script>
+        // Auto-dismiss alerts after 5 seconds
+        setTimeout(() => {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                alert.style.opacity = '0';
+                alert.style.transition = 'opacity 0.5s';
+                setTimeout(() => alert.remove(), 500);
+            });
+        }, 5000);
+    </script>
+</body>
+
+</html>

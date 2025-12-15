@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Lanches da Operação{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+    <nav class="navbar"
+        style="display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background: rgba(5, 10, 24, 0.95); border-bottom: 1px solid rgba(255, 255, 255, 0.05); position: sticky; top: 0; z-index: 1000;">
+        <!-- Brand -->
+        <a href="{{ url_for('index') }}" class="nav-brand"
+            style="font-size: 1.5rem; font-weight: bold; color: var(--accent-cyan); text-decoration: none;">
+            Lanches OP
+        </a>
+
+        <!-- Mobile Menu Button -->
+        <button id="mobileMenuBtn" class="mobile-menu-btn" onclick="toggleMobileMenu()"
+            style="display: none; background: none; border: none; color: white; font-size: 28px; cursor: pointer; padding: 5px;">
+            <i class="ph ph-list"></i>
+        </button>
+
+        <!-- Desktop Navigation -->
+        <div class="desktop-nav" style="display: flex; align-items: center; gap: 20px;">
+            {% if current_user.is_authenticated %}
+            <!-- Nav Links -->
+            <div class="nav-links" style="display: flex; gap: 20px;">
+                {% if current_user.role in ['admin', 'admin_master'] %}
+                <a href="{{ url_for('admin.dashboard') if current_user.role == 'admin' else url_for('master.dashboard') }}"
+                    class="nav-link">
+                    <i class="ph ph-shield"></i> Admin
+                </a>
+                <a href="{{ url_for('user.dashboard') }}" class="nav-link">
+                    <i class="ph ph-hamburger"></i> Pedidos
+                </a>
+                <a href="{{ url_for('user.orders') }}" class="nav-link">
+                    <i class="ph ph-receipt"></i> Meus Pedidos
+                </a>
+                {% else %}
+                <a href="{{ url_for('user.dashboard') }}" class="nav-link">Início</a>
+                <a href="{{ url_for('user.orders') }}" class="nav-link">Meus Pedidos</a>
+                {% endif %}
+            </div>
+
+            <!-- User Info -->
+            <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+                {% if current_user.is_authenticated %}
+                <!-- User Key -->
+                <div
+                    style="display: flex; align-items: center; background: rgba(255,255,255,0.05); padding: 5px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                    <i class="ph ph-user" style="color: var(--text-muted); margin-right: 8px;"></i>
+                    <span style="font-weight: bold; color: white;">{{ current_user.petro_key }}</span>
+                </div>
+
+                <!-- Cart (Dynamic) -->
+                {% set target_subsite = session.get('target_subsite_id') or session.get('master_subsite_id') %}
+                {% if request.endpoint and 'user.' in request.endpoint and request.view_args.get('subsite_id') %}
+                {% set current_subsite_id = request.view_args.get('subsite_id') %}
+                {% set cart = session.get('cart', {}) %}
+                {% set subsite_cart = cart.get(current_subsite_id|string, {}) %}
+                {% set cart_count = subsite_cart.keys()|length %}
+
+                <a href="{{ url_for('user.checkout', subsite_id=current_subsite_id) }}" class="btn-neon"
+                    style="padding: 6px 15px; display: flex; align-items: center; gap: 8px; font-size: 0.9em; box-shadow: none;">
+                    <i class="ph ph-shopping-cart" style="font-size: 1.1em;"></i>
+                    <span>Carrinho</span>
+                    {% if cart_count > 0 %}
+                    <span
+                        style="background: white; color: var(--accent-purple); padding: 2px 6px; border-radius: 10px; font-size: 0.8em; font-weight: bold; min-width: 18px; text-align: center;">{{
+                        cart_count }}</span>
+                    {% endif %}
+                </a>
+                {% endif %}
+
+                <!-- Logout -->
+                <a href="{{ url_for('auth.logout') }}" class="icon-btn minimal" title="Sair"
+                    style="color: var(--text-muted);">
+                    <i class="ph ph-sign-out" style="font-size: 24px;"></i>
+                </a>
+                {% else %}
+                <a href="{{ url_for('auth.login') }}" class="btn-secondary">Entrar</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </nav>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+    <!-- Mobile Sidebar Menu -->
+    <div id="mobileMenu" class="mobile-menu"
+        style="position: fixed; top: 0; right: -300px; width: 280px; height: 100vh; background: var(--bg-dark); z-index: 2000; transition: right 0.3s ease; box-shadow: -4px 0 20px rgba(0,0,0,0.5); overflow-y: auto;">
+        <div style="padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+                <h3 style="margin: 0; color: var(--accent-cyan);">Menu</h3>
+                <button onclick="toggleMobileMenu()"
+                    style="background: none; border: none; color: white; font-size: 28px; cursor: pointer;">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+
+            {% if current_user.is_authenticated %}
+            <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                    <i class="ph ph-user" style="color: var(--accent-cyan);"></i>
+                    <span style="font-weight: bold;">{{ current_user.petro_key }}</span>
+                </div>
+                {% if current_user.name %}
+                <div style="font-size: 0.9em; color: var(--text-muted);">{{ current_user.name }}</div>
+                {% endif %}
+            </div>
+
+            <div class="mobile-nav-links" style="display: flex; flex-direction: column; gap: 15px;">
+                {% if current_user.role in ['admin', 'admin_master'] %}
+                <a href="{{ url_for('admin.dashboard') if current_user.role == 'admin' else url_for('master.dashboard') }}"
+                    style="display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px; text-decoration: none; color: white;">
+                    <i class="ph ph-shield" style="font-size: 20px; color: var(--accent-purple);"></i>
+                    <span>Admin</span>
+                </a>
+                <a href="{{ url_for('user.dashboard') }}"
+                    style="display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px; text-decoration: none; color: white;">
+                    <i class="ph ph-hamburger" style="font-size: 20px; color: var(--accent-cyan);"></i>
+                    <span>Pedidos</span>
+                </a>
+                <a href="{{ url_for('user.orders') }}"
+                    style="display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px; text-decoration: none; color: white;">
+                    <i class="ph ph-receipt" style="font-size: 20px; color: var(--accent-cyan);"></i>
+                    <span>Meus Pedidos</span>
+                </a>
+                {% else %}
+                <a href="{{ url_for('user.dashboard') }}"
+                    style="display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px; text-decoration: none; color: white;">
+                    <i class="ph ph-house" style="font-size: 20px; color: var(--accent-cyan);"></i>
+                    <span>Início</span>
+                </a>
+                <a href="{{ url_for('user.orders') }}"
+                    style="display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px; text-decoration: none; color: white;">
+                    <i class="ph ph-receipt" style="font-size: 20px; color: var(--accent-cyan);"></i>
+                    <span>Meus Pedidos</span>
+                </a>
+                {% endif %}
+
+                <a href="{{ url_for('auth.logout') }}"
+                    style="display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(255,100,100,0.1); border-radius: 8px; text-decoration: none; color: white; margin-top: 20px;">
+                    <i class="ph ph-sign-out" style="font-size: 20px; color: var(--danger);"></i>
+                    <span>Sair</span>
+                </a>
+            </div>
+            {% else %}
+            <a href="{{ url_for('auth.login') }}" class="btn-neon"
+                style="width: 100%; display: block; text-align: center; padding: 12px;">Entrar</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Mobile Menu Overlay -->
+    <div id="mobileMenuOverlay" onclick="toggleMobileMenu()"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0,0,0,0.7); z-index: 1999;">
+    </div>
+
+    <!-- Floating Cart Button (Mobile) -->
+    {% if current_user.is_authenticated %}
+    {% set target_subsite = session.get('target_subsite_id') or session.get('master_subsite_id') %}
+    {% if request.endpoint and 'user.' in request.endpoint and request.view_args.get('subsite_id') %}
+    {% set current_subsite_id = request.view_args.get('subsite_id') %}
+    {% set cart = session.get('cart', {}) %}
+    {% set subsite_cart = cart.get(current_subsite_id|string, {}) %}
+    {% set cart_count = subsite_cart.keys()|length %}
+    {% if cart_count > 0 %}
+    <a href="{{ url_for('user.checkout', subsite_id=current_subsite_id) }}" id="floatingCart"
+        style="position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple)); border-radius: 50%; display: none; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(0,212,255,0.4); z-index: 1500; text-decoration: none; color: white; font-size: 24px;">
+        <i class="ph-fill ph-shopping-cart"></i>
+        <span
+            style="position: absolute; top: -5px; right: -5px; background: var(--danger); color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold;">{{
+            cart_count }}</span>
+    </a>
+    {% endif %}
+    {% endif %}
+    {% endif %}
+
+    <!-- Scripts -->
+    <script>
+        // Mobile Menu Toggle
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            const overlay = document.getElementById('mobileMenuOverlay');
+            const isOpen = menu.style.right === '0px';
+
+            if (isOpen) {
+                menu.style.right = '-300px';
+                overlay.style.display = 'none';
+            } else {
+                menu.style.right = '0px';
+                overlay.style.display = 'block';
+            }
+        }
+    </script>
+
+    <script>
+        // Simple Toast or specific JS
+    </script>
+</body>
+
+</html>
