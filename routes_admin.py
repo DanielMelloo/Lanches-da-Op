@@ -325,10 +325,17 @@ def sectors():
                     db.session.commit()
                     flash(f'Local {"ativado" if sector.active else "desativado"}.', 'success')
                 elif action == 'delete':
-                    # Soft Delete to prevent FK issues
-                    sector.active = False
-                    db.session.commit()
-                    flash('Local excluído (arquivado).', 'success')
+                    try:
+                        # Try Hard Delete first (for clear DB)
+                        db.session.delete(sector)
+                        db.session.commit()
+                        flash('Local excluído permanentemente.', 'success')
+                    except Exception as e:
+                        db.session.rollback()
+                        # Fallback to Soft Delete if FK violation (has orders)
+                        sector.active = False
+                        db.session.commit()
+                        flash('Local em uso foi arquivado (Soft Delete) para manter histórico.', 'warning')
                 elif action == 'update_name':
                     sector.name = name
                     db.session.commit()

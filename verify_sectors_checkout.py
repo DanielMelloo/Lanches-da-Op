@@ -49,33 +49,27 @@ def check():
         else:
             print("\nSUCCESS: Menu categories correctly hidden.")
             
-        print("\n--- Verifying Soft Delete Simulation ---")
-        # Simulate logic: soft delete sets active=False
-        test_sec = Sector(name="Mesa Teste Delete", subsite_id=subsite_id, active=True, type='location')
+        print("\n--- Verifying Smart Delete Simulation ---")
+        # Case 1: Unused Sector (Should Hard Delete)
+        test_sec = Sector(name="Mesa Fim", subsite_id=subsite_id, active=True, type='location')
         db.session.add(test_sec)
         db.session.commit()
-        print(f"Created: {test_sec.name} (Active: {test_sec.active})")
+        print(f"Created Unused: {test_sec.name}")
         
-        # Soft delete action
-        test_sec.active = False
-        db.session.commit()
-        print(f"Deleted (Soft): {test_sec.name} (Active: {test_sec.active})")
-        
-        # Verify visibility
-        visible = Sector.query.filter(
-            (Sector.subsite_id == subsite_id) & 
-            ((Sector.type == 'location') | (Sector.type == None)) &
-            (Sector.active == True) # This is crucial
-        ).all()
-        
-        if any(s.name == "Mesa Teste Delete" for s in visible):
-            print("FAILURE: Soft deleted item still visible!")
+        # Manually trying hard delete (simulating route logic)
+        try:
+            db.session.delete(test_sec)
+            db.session.commit()
+            print("Hard Deleted (Unused): Success")
+        except Exception as e:
+             print(f"Hard Delete Failed: {e}")
+             
+        # Verify it's gone
+        check_gone = Sector.query.filter_by(name="Mesa Fim").first()
+        if not check_gone:
+            print("SUCCESS: Unused sector was permanently removed.")
         else:
-            print("SUCCESS: Soft deleted item correctly hidden.")
-            
-        # Cleanup
-        db.session.delete(test_sec)
-        db.session.commit()
+             print("FAILURE: Unused sector still exists.")
 
 if __name__ == "__main__":
     check()
