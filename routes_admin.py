@@ -80,6 +80,12 @@ def delete_order(order_id):
     order = Order.query.get_or_404(order_id)
     db.session.delete(order)
     db.session.commit()
+    
+    # Recalculate taxes if variable mode
+    if order.subsite.tax_mode == 'variable':
+         from services.tax_service import recalculate_taxes
+         recalculate_taxes(order.subsite_id)
+         
     flash('Pedido excluído.', 'success')
     return redirect(url_for('admin.orders'))
 
@@ -95,6 +101,14 @@ def delete_all_orders():
     # Delete all orders for this subsite
     Order.query.filter_by(subsite_id=subsite_id).delete()
     db.session.commit()
+    
+    # Recalculate taxes (will be 0 since no orders, but good to reset)
+    from models import Subsite
+    subsite = Subsite.query.get(subsite_id)
+    if subsite and subsite.tax_mode == 'variable':
+         from services.tax_service import recalculate_taxes
+         recalculate_taxes(subsite_id)
+         
     flash('Todos os pedidos foram excluídos.', 'success')
     return redirect(url_for('admin.orders'))
 
@@ -828,3 +842,86 @@ def scraper_schedule():
     
     flash('Configuração de agendamento salva.', 'success')
     return redirect(url_for('admin.scraper', store_id=store.id))
+
+
+@admin_bp.route('/settings/payment', methods=['POST'])
+@login_required
+def update_payment_settings():
+    if current_user.role not in ['admin', 'admin_master']:
+        return redirect(url_for('index'))
+        
+    subsite_id = current_user.subsite_id
+    if current_user.role == 'admin_master':
+        subsite_id = session.get('master_subsite_id')
+        
+    subsite = Subsite.query.get_or_404(subsite_id)
+    
+    action = request.form.get('action')
+    
+    if action == 'toggle_require_payment':
+        new_state = not subsite.require_payment
+        subsite.require_payment = new_state
+        
+        if new_state: # Turning ON
+            # Move all "Confirmed" orders to "Pending"
+            confirmed_status = Status.query.filter_by(name='Pedido Confirmado').first()
+            pending_status = Status.query.filter_by(name='Pagamento Pendente').first()
+            
+            if confirmed_status and pending_status:
+                orders = Order.query.filter_by(subsite_id=subsite_id, status_id=confirmed_status.id).all()
+                count = 0
+                for o in orders:
+                    o.status = pending_status
+                    o.payment_required = True
+                    count += 1
+                flash(f'Pagamento Obrigatório ATIVADO. {count} pedidos movidos para Pendente.', 'success')
+            else:
+                flash('Pagamento Obrigatório ATIVADO.', 'success')
+        else:
+             flash('Pagamento Obrigatório DESATIVADO.', 'success')
+             
+    elif action == 'toggle_pass_tax':
+        # Ensure the attribute exists (migration check)
+        if hasattr(subsite, 'pass_pix_tax'):
+            subsite.pass_pix_tax = not subsite.pass_pix_tax
+            flash(f'Repasse de Taxa Pix (1.3%) {"ATIVADO" if subsite.pass_pix_tax else "DESATIVADO"}.', 'success')
+        else:
+            flash('Erro: Campo pass_pix_tax não encontrado no banco de dados. Execute a migração.', 'error')
+    
+    db.session.commit()
+    
+    if subsite.tax_mode == 'variable':
+        from services.tax_service import recalculate_taxes
+        recalculate_taxes(subsite_id)
+        
+    return redirect(url_for('admin.dashboard'))
+
+@admin_bp.route('/settings/tax_goal', methods=['POST'])
+@login_required
+def update_tax_goal():
+    subsite_id = current_user.subsite_id
+    if current_user.role == 'admin_master':
+        subsite_id = session.get('master_subsite_id')
+    
+    subsite = Subsite.query.get_or_404(subsite_id)
+    
+    try:
+        daily_goal = float(request.form.get('daily_goal', 0))
+        
+        current_settings = subsite.variable_tax_settings or {}
+        current_settings['daily_goal'] = daily_goal
+        
+        subsite.variable_tax_settings = current_settings
+        
+        # Ensure mode is variable
+        subsite.tax_mode = 'variable'
+        db.session.commit()
+        
+        from services.tax_service import recalculate_taxes
+        recalculate_taxes(subsite_id)
+        
+        flash(f'Meta diária atualizada para R$ {daily_goal:.2f}', 'success')
+    except ValueError:
+        flash('Valor inválido.', 'error')
+        
+    return redirect(url_for('admin.dashboard'))

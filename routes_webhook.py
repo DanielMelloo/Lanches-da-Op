@@ -43,7 +43,7 @@ def efi_webhook():
                 continue
             
             # Atualizar para pago
-            paid_status = Status.query.filter_by(name='Pagamento Confirmado').first()
+            paid_status = Status.query.filter_by(name='Pedido Confirmado').first() # Was Pagamento Confirmado
             if paid_status:
                 order.status = paid_status
             

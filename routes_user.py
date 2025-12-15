@@ -351,8 +351,8 @@ def checkout(subsite_id):
         
     total_with_tax = total_items + tax_value
 
-    # Apply 1.3% Markup only if online payment is required
-    markup = 1.013 if subsite.require_payment else 1.0
+    # Apply 1.3% Markup if "Repassar Taxa Pix" is enabled
+    markup = 1.013 if subsite.pass_pix_tax else 1.0
     total_general = total_with_tax * markup
     
     service_fee = total_general - total_items
@@ -451,6 +451,10 @@ def checkout(subsite_id):
         else:
             flash(f'Pedido realizado com sucesso!', 'success')
             
+        if subsite.tax_mode == 'variable':
+             from services.tax_service import recalculate_taxes
+             recalculate_taxes(subsite_id)
+
         # Clear cart
         session.pop('cart', None)
         
