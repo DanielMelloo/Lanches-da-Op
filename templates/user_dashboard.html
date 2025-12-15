@@ -10,7 +10,7 @@
 
 <!-- Subsites Section (Static) -->
 <h3 class="mb-md">O que vamos pedir hoje?</h3>
-<div class="grid grid-cols">
+<div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;">
     {% for subsite in subsites %}
     <div class="card glass-panel text-center" style="cursor: pointer; transition: transform 0.2s;"
         onclick="window.location.href='{{ url_for('user.menu', subsite_id=subsite.id) }}'">
