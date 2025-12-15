@@ -325,9 +325,10 @@ def sectors():
                     db.session.commit()
                     flash(f'Local {"ativado" if sector.active else "desativado"}.', 'success')
                 elif action == 'delete':
-                    db.session.delete(sector)
+                    # Soft Delete to prevent FK issues
+                    sector.active = False
                     db.session.commit()
-                    flash('Local excluído.', 'success')
+                    flash('Local excluído (arquivado).', 'success')
                 elif action == 'update_name':
                     sector.name = name
                     db.session.commit()
@@ -335,14 +336,18 @@ def sectors():
         else:
             # Create new sector
             if name:
-                new_sector = Sector(name=name, subsite_id=subsite_id, active=True)
+                new_sector = Sector(name=name, subsite_id=subsite_id, active=True, type='location')
                 db.session.add(new_sector)
                 db.session.commit()
                 flash('Local criado.', 'success')
             
         return redirect(url_for('admin.sectors'))
 
-    sectors = Sector.query.filter_by(subsite_id=subsite_id).all()
+    # Only show locations (tables), hide menu categories created by scraper
+    sectors = Sector.query.filter(
+        (Sector.subsite_id == subsite_id) & 
+        ((Sector.type == 'location') | (Sector.type == None))
+    ).all()
     return render_template('admin_sectors.html', sectors=sectors)
 
 @admin_bp.route('/items', methods=['GET', 'POST'])
