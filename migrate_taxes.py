@@ -1,7 +1,8 @@
-from app import app, db
+from app import create_app, db
 from sqlalchemy import text
 
 def migrate():
+    app = create_app()
     with app.app_context():
         # Check columns using raw SQL or inspection. 
         # Simplest way for SQLite/MySQL is to try adding them and catch errors, or inspect.
@@ -26,7 +27,7 @@ def migrate():
             
             for col_name, col_def in columns:
                 try:
-                    query = text(f"ALTER TABLE subsite ADD COLUMN {col_name} {col_def}")
+                    query = text(f"ALTER TABLE subsites ADD COLUMN {col_name} {col_def}")
                     conn.execute(query)
                     print(f"Added column {col_name}")
                 except Exception as e:

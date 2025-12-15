@@ -70,8 +70,10 @@ def create_app():
     scheduler.init_app(app)
     
     # Avoid starting scheduler twice when using reloader on Windows (fixes WinError 10038)
-    if not app.debug or os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
-        scheduler.start()
+    # Also skip if SKIP_SCHEDULER is set (for local workers)
+    if (not app.debug or os.environ.get('WERKZEUG_RUN_MAIN') == 'true') and not os.environ.get('SKIP_SCHEDULER'):
+        if not scheduler.running:
+            scheduler.start()
     # -----------------------------------------------------------
 
     @app.route('/fix_schema_orders')

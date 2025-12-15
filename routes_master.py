@@ -190,9 +190,14 @@ def manage_users():
             user = User.query.get_or_404(user_id)
             
             if action == 'update_phone':
-                user.phone = request.form.get('phone')
-                db.session.commit()
-                flash('Telefone atualizado.', 'success')
+                phone = request.form.get('phone')
+                clean = ''.join(filter(str.isdigit, phone)) if phone else ''
+                if phone and (len(clean) < 10 or len(clean) > 11):
+                    flash('Telefone inválido format (DD) 9XXXX-XXXX', 'error')
+                else:
+                    user.phone = phone
+                    db.session.commit()
+                    flash('Telefone atualizado.', 'success')
             
             elif action == 'update_name':
                 user.name = request.form.get('name')
@@ -240,6 +245,12 @@ def create_admin():
         existing = User.query.filter_by(petro_key=petro_key).first()
         if existing:
             flash('Chave já cadastrada.', 'error')
+            return redirect(url_for('master.create_admin'))
+        
+        # Clean phone
+        clean_phone = ''.join(filter(str.isdigit, phone)) if phone else ''
+        if phone and (len(clean_phone) < 10 or len(clean_phone) > 11):
+            flash('Telefone inválido. Use (DD) 9XXXX-XXXX', 'error')
             return redirect(url_for('master.create_admin'))
         
         new_user = User(

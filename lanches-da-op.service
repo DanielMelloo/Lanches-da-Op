@@ -1,0 +1,15 @@
+[Unit]
+Description=Gunicorn instance to serve Lanches da OP
+After=network.target
+
+[Service]
+User=root
+Group=root
+WorkingDirectory=/home/ec2-user/Lanches-da-Op
+Environment="PATH=/home/ec2-user/Lanches-da-Op/venv/bin"
+Environment="TZ=America/Sao_Paulo"
+# Binding to port 8000 (proxied by Nginx)
+ExecStart=/home/ec2-user/Lanches-da-Op/venv/bin/gunicorn --workers 3 --timeout 300 --bind 0.0.0.0:8000 "app:create_app()"
+
+[Install]
+WantedBy=multi-user.target

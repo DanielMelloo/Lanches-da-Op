@@ -457,7 +457,9 @@ def checkout(subsite_id):
         return redirect(url_for('user.order_detail', order_id=new_order.id))
 
     sectors = Sector.query.filter(
-        ((Sector.subsite_id == subsite_id) | (Sector.subsite_id == None)) & (Sector.active == True)
+        ((Sector.subsite_id == subsite_id) | (Sector.subsite_id == None)) & 
+        (Sector.active == True) & 
+        ((Sector.type == 'location') | (Sector.type == None)) # Handle legacy/null as location
     ).all()
     
     return render_template('user_checkout.html', 
@@ -489,6 +491,12 @@ def profile():
                  flash('Esta chave já está em uso por outro usuário.', 'error')
                  return redirect(url_for('user.profile'))
         
+        # Validate Phone
+        clean_phone = ''.join(filter(str.isdigit, phone)) if phone else ''
+        if phone and (len(clean_phone) < 10 or len(clean_phone) > 11):
+             flash('Telefone inválido. Use (DD) 9XXXX-XXXX', 'error')
+             return redirect(url_for('user.profile'))
+
         current_user.name = name
         current_user.phone = phone
         current_user.petro_key = petro_key

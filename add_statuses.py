@@ -1,3 +1,11 @@
+import os
+# Override DB config to point to SSH Tunnel
+os.environ['DB_HOST'] = '127.0.0.1:3307'
+os.environ['DB_USER'] = 'root'
+os.environ['DB_PASSWORD'] = 'CodeEz4ever'
+os.environ['DB_NAME'] = 'lanches_da_op'
+os.environ['SKIP_SCHEDULER'] = 'true'
+
 from app import create_app
 from models import db, Status
 

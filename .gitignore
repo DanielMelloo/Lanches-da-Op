@@ -57,3 +57,7 @@ static/uploads/
 # OS
 .DS_Store
 Thumbs.db
+
+# Temporary Debug Files
+page_dump.html
+models_remote.py

@@ -5,47 +5,70 @@
 {% block content %}
 <div class="glass-panel" style="padding: 30px; max-width: 600px; margin: 0 auto;">
     <h2>{{ 'Editar' if user else 'Novo' }} Admin Local</h2>
-    <p class="text-muted">{{ 'Edite os dados do usuário.' if user else 'Crie um administrador para gerenciar um subsite específico.' }}</p>
-    
+    <p class="text-muted">{{ 'Edite os dados do usuário.' if user else 'Crie um administrador para gerenciar um subsite
+        específico.' }}</p>
+
     <form method="POST">
         <div class="form-group">
             <label for="name">Nome Completo</label>
-            <input type="text" id="name" name="name" value="{{ user.name if user else '' }}" required placeholder="Nome do Admin">
+            <input type="text" id="name" name="name" value="{{ user.name if user else '' }}" required
+                placeholder="Nome do Admin">
+        </div>
+
+        <div class="form-group">
+            <label for="phone">Telefone</label>
+            <input type="tel" id="phone" name="phone" value="{{ user.phone if user else '' }}" required
+                placeholder="(XX) 9XXXX-XXXX">
         </div>
 
         <div class="form-group">
             <label for="petro_key">Chave (4 Caracteres)</label>
-            <input type="text" id="petro_key" name="petro_key" value="{{ user.petro_key if user else '' }}" maxlength="4" required placeholder="ABCD" style="text-transform: uppercase;">
+            <input type="text" id="petro_key" name="petro_key" value="{{ user.petro_key if user else '' }}"
+                maxlength="4" required placeholder="ABCD" style="text-transform: uppercase;">
         </div>
 
         <div class="form-group">
             <label for="role">Função (Role)</label>
-            <select id="role" name="role" required style="width: 100%; padding: 12px; background: var(--input-bg); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;">
-                <option value="user" {% if user and user.role == 'user' %}selected{% endif %}>Usuário Comum</option>
-                <option value="admin" {% if user and user.role == 'admin' %}selected{% endif %}>Admin Local</option>
-                <option value="admin_master" {% if user and user.role == 'admin_master' %}selected{% endif %}>Master Admin</option>
+            <select id="role" name="role" required
+                style="width: 100%; padding: 12px; background: var(--input-bg); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;">
+                <option value="user" {% if user and user.role=='user' %}selected{% endif %}>Usuário Comum</option>
+                <option value="admin" {% if user and user.role=='admin' %}selected{% endif %}>Admin Local</option>
+                <option value="admin_master" {% if user and user.role=='admin_master' %}selected{% endif %}>Master Admin
+                </option>
             </select>
         </div>
 
         <div class="form-group">
             <label for="subsite_id">Subsite Vinculado (Opcional)</label>
-            <select id="subsite_id" name="subsite_id" style="width: 100%; padding: 12px; background: var(--input-bg); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;">
+            <select id="subsite_id" name="subsite_id"
+                style="width: 100%; padding: 12px; background: var(--input-bg); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;">
                 <option value="">Nenhum Subsite</option>
                 {% for sub in subsites %}
-                <option value="{{ sub.id }}" {% if user and user.subsite_id == sub.id %}selected{% endif %}>{{ sub.name }}</option>
+                <option value="{{ sub.id }}" {% if user and user.subsite_id==sub.id %}selected{% endif %}>{{ sub.name }}
+                </option>
                 {% endfor %}
             </select>
         </div>
 
         <div class="form-group">
-            <label for="password">{{ 'Nova Senha (deixe em branco para manter)' if user else 'Senha de Acesso' }}</label>
-            <input type="password" id="password" name="password" {% if not user %}required{% endif %} placeholder="Senha">
+            <label for="password">{{ 'Nova Senha (deixe em branco para manter)' if user else 'Senha de Acesso'
+                }}</label>
+            <input type="password" id="password" name="password" {% if not user %}required{% endif %}
+                placeholder="Senha">
         </div>
 
         <div style="display: flex; gap: 10px; margin-top: 30px;">
             <button type="submit" class="btn-neon" style="flex: 1;">{{ 'Salvar' if user else 'Criar Admin' }}</button>
-            <a href="{{ url_for('master.manage_users') }}" class="btn-secondary" style="flex: 1; text-align: center;">Cancelar</a>
+            <a href="{{ url_for('master.manage_users') }}" class="btn-secondary"
+                style="flex: 1; text-align: center;">Cancelar</a>
         </div>
     </form>
 </div>
+
+<script>
+    document.getElementById('phone').addEventListener('input', function (e) {
+        let x = e.target.value.replace(/\D/g, '').match(/(\d{0,2})(\d{0,5})(\d{0,4})/);
+        e.target.value = !x[2] ? x[1] : '(' + x[1] + ') ' + x[2] + (x[3] ? '-' + x[3] : '');
+    });
+</script>
 {% endblock %}

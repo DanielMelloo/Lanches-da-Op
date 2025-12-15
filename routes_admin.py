@@ -767,22 +767,16 @@ def scraper():
     return render_template('admin_scraper.html', stores=stores, store=store, config=config)
 
 @admin_bp.route('/scraper/run', methods=['POST'])
+@login_required
 def scraper_run():
-    from services.scraper_manager import ScraperManager
-    
     store_id = request.form.get('store_id')
-    mode = request.form.get('mode', 'update')
-    
     store = Store.query.get_or_404(store_id)
-    # Check perm
-    # (Simplified for brevity, strictly should check subsite match)
     
-    try:
-        stats = ScraperManager.sync_items(store.id, mode=mode)
-        flash(f'Sincronização ({mode}) concluída: {stats}', 'success')
-    except Exception as e:
-        flash(f'Erro ao rodar scraper: {str(e)}', 'error')
-        
+    # Queue the job for local worker
+    store.scraper_status = 'pending'
+    db.session.commit()
+    
+    flash(f'Solicitação enviada para o terminal local! (Status: Pending)', 'info')
     return redirect(url_for('admin.scraper', store_id=store.id))
 
 @admin_bp.route('/scraper/schedule', methods=['POST'])

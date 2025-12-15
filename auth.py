@@ -93,9 +93,19 @@ def register():
             flash('Chave já cadastrada', 'error')
             return redirect(url_for('auth.login'))
             
+        # Clean phone
+        clean_phone = ''.join(filter(str.isdigit, phone)) if phone else ''
+        if not phone or len(clean_phone) < 10 or len(clean_phone) > 11:
+            flash('Telefone inválido. Use (DD) 9XXXX-XXXX', 'error')
+            return redirect(url_for('auth.register'))
+            
         new_user = User(
             name=name, 
-            phone=phone, 
+            phone=phone, # Save with formatting or clean? Usually raw. But UI has mask. Let's save as input for now but valid.
+            # Ideally save clean, but let's keep consistent with existing data which seems mixed or formatted.
+            # User profile shows {{ current_user.phone or '' }}, mask handles formatting on input. 
+            # Storing formatted is fine for small apps, strictly digits is better.
+            # Let's simple check.
             petro_key=petro_key, 
             role='user',
             subsite_id=target_subsite_id # Link to selected subsite

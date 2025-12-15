@@ -61,24 +61,33 @@ class Store(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     active = db.Column(db.Boolean, default=True)
-    scraper_config = db.Column(db.JSON) # { "url": "...", "interval": 60, "last_run": "...", "mode": "update", "schedule_type": "interval|daily", "schedule_time": "HH:MM:SS" }
+    
+    # Scraper
+    scraper_config = db.Column(db.JSON)
+    scraper_status = db.Column(db.String(20), default='idle')
+    scraper_last_run = db.Column(db.DateTime)
+    
     subsite_id = db.Column(db.Integer, db.ForeignKey('subsites.id'), nullable=False)
 
 class Item(db.Model):
     __tablename__ = 'items'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text)
     price = db.Column(db.Float, nullable=False)
     active = db.Column(db.Boolean, default=True)
     image_url = db.Column(db.String(500))
     subitems_json = db.Column(db.JSON)  # Structure: [{"title": "Principal", "type": "radio", "options": ["frango", "bife"]}, ...]
     store_id = db.Column(db.Integer, db.ForeignKey('stores.id'), nullable=False)
+    sector_id = db.Column(db.Integer, db.ForeignKey('sectors.id'))
     store = db.relationship('Store', backref='items')
+    sector = db.relationship('Sector', backref='items')
 
 class Sector(db.Model):
     __tablename__ = 'sectors'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False)
+    type = db.Column(db.String(20), default='location') # 'location' (tables) or 'category' (menu)
     active = db.Column(db.Boolean, default=True)
     subsite_id = db.Column(db.Integer, db.ForeignKey('subsites.id'))
 

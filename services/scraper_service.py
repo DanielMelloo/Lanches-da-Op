@@ -5,7 +5,8 @@ def scrape_menu(url="https://app.anota.ai/m/JLS7eh7xw"):
     
     with sync_playwright() as p:
         # Launch browser logic
-        browser = p.chromium.launch(headless=True)
+        # Add --no-sandbox for root/docker/EC2 environments
+        browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-setuid-sandbox'])
         page = browser.new_page()
         
         try:
