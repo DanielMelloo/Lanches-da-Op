@@ -314,23 +314,32 @@
             const data = await res.json();
             presetsData = data.presets || [];
             
-            const select = document.getElementById('templateSelect');
-            select.innerHTML = '<option value="">-- Selecione --</option>';
-            
-            presetsData.forEach(p => {
-                const opt = document.createElement('option');
-                opt.value = p.id;
-                opt.textContent = p.name;
-                select.appendChild(opt);
+            document.querySelectorAll('.preset-select').forEach(select => {
+                const currentVal = select.value;
+                select.innerHTML = '<option value="">-- Selecione --</option>';
+                
+                presetsData.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.id;
+                    opt.textContent = p.name;
+                    select.appendChild(opt);
+                });
+                
+                // Restore value if still valid
+                if(presetsData.find(p => p.id == currentVal)) select.value = currentVal;
             });
+
         } catch (e) {
             console.log(e);
         }
     }
 
-    async function savePreset() {
-        const textarea = document.querySelector('textarea[name="whatsapp_template"]');
+    async function savePreset(btn) {
+        // Find textarea relative to button
+        const form = btn.closest('form');
+        const textarea = form.querySelector('textarea[name="whatsapp_template"]');
         const content = textarea.value;
+        
         if(!content) return alertModal('Atenção', 'O modelo está vazio.');
         
         promptModal('Nome do Modelo', 'Ex: Promoção Feriado', async (name) => {
@@ -353,20 +362,26 @@
         });
     }
 
-    function loadPreset(id) {
+    function loadPreset(select) {
+        const id = select.value;
         if(!id) return;
+        
         const p = presetsData.find(x => x.id == id);
         if(p) {
             confirmModal('Carregar Modelo?', 'Deseja substituir o texto atual pelo modelo "'+p.name+'"?', () => {
-                const textarea = document.querySelector('textarea[name="whatsapp_template"]');
+                const form = select.closest('form');
+                const textarea = form.querySelector('textarea[name="whatsapp_template"]');
                 textarea.value = p.content;
             });
         }
     }
 
-    async function deletePreset() {
-        const select = document.getElementById('templateSelect');
+    async function deletePreset(btn) {
+        // Find select sibling
+        const wrapper = btn.closest('div'); 
+        const select = wrapper.querySelector('.preset-select');
         const id = select.value;
+        
         if(!id) return alertModal('Atenção', 'Selecione um modelo para excluir.');
         
         confirmModal('Excluir?', 'Tem certeza que deseja apagar este modelo permanentemente?', async () => {
@@ -497,15 +512,15 @@
                         <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                             <div style="display: flex; gap: 10px; align-items: center;">
                                 <label style="font-size: 0.9em; color: var(--text-muted);">Modelos Salvos:</label>
-                                <select id="templateSelect" class="input-field" style="padding: 5px; min-width: 150px;" onchange="loadPreset(this.value)">
+                                <select class="preset-select input-field" style="padding: 5px; min-width: 150px;" onchange="loadPreset(this)">
                                     <option value="">-- Selecione --</option>
                                 </select>
-                                <button type="button" class="icon-btn minimal" onclick="deletePreset()" title="Excluir Modelo" style="color: var(--danger);">
+                                <button type="button" class="icon-btn minimal" onclick="deletePreset(this)" title="Excluir Modelo" style="color: var(--danger);">
                                     <i class="ph ph-trash"></i>
                                 </button>
                             </div>
                             
-                            <button type="button" class="btn-secondary" onclick="savePreset()" style="font-size: 0.8em; padding: 5px 15px;">
+                            <button type="button" class="btn-secondary" onclick="savePreset(this)" style="font-size: 0.8em; padding: 5px 15px;">
                                 <i class="ph ph-floppy-disk"></i> Salvar Modelo Atual
                             </button>
                         </div>
