@@ -74,7 +74,10 @@ def order_details(order_id):
     order = Order.query.get_or_404(order_id)
     statuses = Status.query.all()
     sectors = Sector.query.all()
-    items = Item.query.all()
+    
+    # Filter items by the order's subsite only
+    items = Item.query.join(Store).filter(Store.subsite_id == order.subsite_id).all()
+    
     return render_template('admin_order_details.html', order=order, statuses=statuses, sectors=sectors, items=items)
 
 @admin_bp.route('/order/<int:order_id>/delete', methods=['POST'])
