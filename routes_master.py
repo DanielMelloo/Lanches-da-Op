@@ -147,10 +147,20 @@ def manage_subsites():
                 db.session.commit()
                 flash(f'Subsite {"ativado" if subsite.active else "desativado"}.', 'success')
             
-            elif action == 'toggle_payment':
-                subsite.require_payment = 'require_payment' in request.form
+            elif action == 'toggle_require_payment':
+                subsite.require_payment = not subsite.require_payment
                 db.session.commit()
-                flash('Configuração de pagamento atualizada.', 'success')
+                flash('Obrigatoriedade de pagamento atualizada.', 'success')
+            
+            elif action == 'toggle_pass_tax':
+                subsite.pass_pix_tax = not subsite.pass_pix_tax
+                db.session.commit()
+                flash('Configuração de repasse de taxa atualizada.', 'success')
+            
+            elif action == 'toggle_efi_active':
+                subsite.efi_active = not subsite.efi_active
+                db.session.commit()
+                flash('Integração API atualizada.', 'success')
             
             elif action == 'delete':
                 db.session.delete(subsite)
@@ -162,7 +172,12 @@ def manage_subsites():
             new_subsite = Subsite(
                 name=request.form.get('name'),
                 active='active' in request.form,
-                require_payment='require_payment' in request.form
+                require_payment='require_payment' in request.form,
+                pass_pix_tax='pass_pix_tax' in request.form,
+                efi_active='efi_active' in request.form,
+                order_opening_time=request.form.get('order_opening_time', '08:00'),
+                order_closing_time=request.form.get('order_closing_time', '23:59'),
+                closing_time_active='closing_time_active' in request.form
             )
             db.session.add(new_subsite)
             db.session.commit()
@@ -224,6 +239,11 @@ def manage_users():
                 user.active = not user.active
                 db.session.commit()
                 flash(f'Usuário {"ativado" if user.active else "desativado"}.', 'success')
+            
+            elif action == 'update_role':
+                user.role = request.form.get('role')
+                db.session.commit()
+                flash('Função do usuário atualizada.', 'success')
         
         return redirect(url_for('master.manage_users'))
     

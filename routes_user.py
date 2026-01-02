@@ -301,6 +301,15 @@ def check_payment_status(order_id):
 @login_required
 def checkout(subsite_id):
     subsite = Subsite.query.get_or_404(subsite_id)
+    
+    # ------------------------------------------------------------------
+    # BLOCK ORDER IF CLOSED
+    # ------------------------------------------------------------------
+    if not subsite.is_open():
+        flash('Desculpe, a loja já encerrou o recebimento de pedidos para hoje.', 'warning')
+        return redirect(url_for('user.menu', subsite_id=subsite_id))
+    # ------------------------------------------------------------------
+
     cart = session.get('cart', {})
     subsite_cart = cart.get(str(subsite_id), {})
     

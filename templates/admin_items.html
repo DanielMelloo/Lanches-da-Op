@@ -156,7 +156,14 @@
                 </div>
             </div>
 
-            <button type="submit" class="btn-neon"><i class="ph ph-floppy-disk"></i> Criar Item</button>
+            <!-- Subitems Dynamic Editor -->
+            <div style="margin-top: 20px;">
+                {% include "partials/_subitems_editor.html" %}
+            </div>
+
+            <button type="submit" class="btn-neon" style="margin-top: 20px;" onclick="serializeSubitems()">
+                <i class="ph ph-floppy-disk"></i> Criar Item
+            </button>
         </form>
     </div>
 

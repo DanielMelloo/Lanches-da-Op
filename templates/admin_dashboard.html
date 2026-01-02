@@ -3,24 +3,133 @@
 {% block title %}Admin - {{ subsite.name }}{% endblock %}
 
 {% block content %}
+<style>
+    @keyframes pulse-green {
+        0% { box-shadow: 0 0 0 0 rgba(0, 255, 100, 0.4); }
+        70% { box-shadow: 0 0 0 10px rgba(0, 255, 100, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(0, 255, 100, 0); }
+    }
+    
+    .badge-interactive {
+        padding: 10px 20px;
+        font-size: 0.9em;
+        font-weight: 700;
+        border-radius: 30px;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .badge-open {
+        background: rgba(0, 255, 100, 0.1);
+        color: var(--success);
+        border: 1px solid var(--success);
+        animation: pulse-green 2s infinite;
+    }
+
+    .badge-closed {
+        background: rgba(255, 50, 50, 0.1);
+        color: var(--danger);
+        border: 1px solid var(--danger);
+    }
+
+    .time-input-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(0,0,0,0.2);
+        padding: 5px 12px;
+        border-radius: 12px;
+        border: 1px solid rgba(255,255,255,0.05);
+        transition: all 0.2s;
+    }
+
+    .time-input-group:focus-within {
+        background: rgba(0,0,0,0.4);
+        border-color: var(--accent-cyan);
+        box-shadow: 0 0 15px rgba(0, 243, 255, 0.1);
+    }
+
+    .minimal-time-field {
+        background: rgba(255,255,255,0.1);
+        border: 1px solid rgba(255,255,255,0.1);
+        color: white;
+        font-family: 'Ubuntu', sans-serif;
+        font-size: 1.1em;
+        font-weight: 500;
+        width: 120px;
+        padding: 6px 10px;
+        border-radius: 8px;
+        outline: none;
+        cursor: pointer;
+        color-scheme: dark;
+    }
+
+    .minimal-time-field:hover {
+        background: rgba(255,255,255,0.15);
+        border-color: rgba(255,255,255,0.3);
+    }
+
+    .save-schedule-btn {
+        background: rgba(0, 243, 255, 0.1);
+        color: var(--accent-cyan);
+        border: 1px solid rgba(0, 243, 255, 0.2);
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+
+    .save-schedule-btn:hover {
+        background: var(--accent-cyan);
+        color: var(--background-dark);
+        transform: scale(1.05);
+    }
+</style>
+
 <div class="glass-panel" style="padding: 30px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-        <div>
-            <h2>Painel Admin</h2>
-            <p class="text-muted">{{ subsite.name }}</p>
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <div>
+                <h2 style="margin: 0;">Painel Admin</h2>
+                <p class="text-muted" style="margin: 0;">{{ subsite.name }}</p>
+            </div>
+            
+            <!-- Store Status Indicator -->
+            <form action="{{ url_for('admin.update_closing_schedule') }}" method="POST" style="margin: 0; margin-left: 10px;" id="store_status_container">
+                <input type="hidden" name="action" value="manual_toggle">
+                <button type="submit" style="background: none; border: none; padding: 0; cursor: pointer;">
+                    {% if subsite.is_open() %}
+                        <span class="badge-interactive badge-open" id="status_badge">
+                            <i class="ph-fill ph-door-open"></i> LOJA ABERTA
+                        </span>
+                    {% else %}
+                        <span class="badge-interactive badge-closed" id="status_badge">
+                            <i class="ph-fill ph-door-closed"></i> LOJA FECHADA
+                        </span>
+                    {% endif %}
+                </button>
+            </form>
         </div>
 
         <!-- Controls -->
-        <div style="display: flex; gap: 15px;">
+        <div style="display: flex; gap: 15px; flex-wrap: wrap; justify-content: flex-end;">
             <!-- Variable Tax Goal Input -->
             <form action="{{ url_for('admin.update_tax_goal') }}" method="POST" style="margin: 0;">
-                <div style="position: relative; width: 150px;">
+                <div style="position: relative; width: 140px;">
                     <i class="ph ph-target"
                         style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--accent-cyan);"></i>
                     <input type="number" step="0.01" name="daily_goal"
                         value="{{ subsite.variable_tax_settings.get('daily_goal', 0) if subsite.variable_tax_settings else 0 }}"
                         placeholder="Meta R$" onblur="this.form.submit()"
-                        title="Meta de Despesas Diária (Enter para salvar)"
+                        title="Meta de Despesas Diária"
                         style="width: 100%; padding: 8px 8px 8px 35px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; color: white;">
                 </div>
             </form>
@@ -28,26 +137,119 @@
             <!-- Toggle: Pass Pix Tax -->
             <form action="{{ url_for('admin.update_payment_settings') }}" method="POST" style="margin: 0;">
                 <input type="hidden" name="action" value="toggle_pass_tax">
-                <button type="submit" class="btn-secondary"
-                    style="height: 38px; {{ 'border-color: var(--accent-yellow); color: var(--accent-yellow);' if subsite.pass_pix_tax else 'opacity: 0.7;' }}"
-                    title="Repassar Taxa Pix (1.3%)">
-                    <i class="ph {{ 'ph-check-circle' if subsite.pass_pix_tax else 'ph-circle' }}"></i> +1.3%
+                <button type="submit" class="btn-secondary {{ 'btn-toggle-on' if subsite.pass_pix_tax else 'btn-toggle-off' }}"
+                    style="height: 38px; display: flex; align-items: center; gap: 8px;"
+                    title="{{ 'Taxa Ativada - Clique para desligar' if subsite.pass_pix_tax else 'Taxa Desativada - Clique para ligar' }}">
+                    <i class="ph ph-percent"></i>
+                    <span>Taxa: {{ 'ON' if subsite.pass_pix_tax else 'OFF' }}</span>
                 </button>
             </form>
 
             <!-- Toggle: Mandatory Payment -->
             <form action="{{ url_for('admin.update_payment_settings') }}" method="POST" style="margin: 0;">
                 <input type="hidden" name="action" value="toggle_require_payment">
-                <button type="submit" class="btn-secondary"
-                    style="height: 38px; {{ 'border-color: var(--success); color: var(--success);' if subsite.require_payment else 'opacity: 0.7;' }}"
-                    title="Pagamento Obrigatório (Gera PIX)">
-                    <i class="ph {{ 'ph-lock-key' if subsite.require_payment else 'ph-lock-key-open' }}"></i> PIX
+                <button type="submit" class="btn-secondary {{ 'btn-toggle-on' if subsite.require_payment else 'btn-toggle-off' }}"
+                    style="height: 38px; display: flex; align-items: center; gap: 8px;"
+                    title="{{ 'Obrigatório: Ativado - Clique para desligar' if subsite.require_payment else 'Obrigatório: Desativado - Clique para ligar' }}">
+                    <i class="ph {{ 'ph-lock-key' if subsite.require_payment else 'ph-lock-key-open' }}"></i>
+                    <span>Pagamento: {{ 'ON' if subsite.require_payment else 'OFF' }}</span>
                 </button>
             </form>
 
-            <div
-                style="background: rgba(255,255,255,0.05); padding: 5px 15px; border-radius: 20px; height: 38px; display: flex; align-items: center;">
+            <!-- Toggle: Global API Active -->
+            <form action="{{ url_for('admin.update_payment_settings') }}" method="POST" style="margin: 0;">
+                <input type="hidden" name="action" value="toggle_efi_active">
+                <button type="submit" class="btn-secondary {{ 'btn-toggle-on' if subsite.efi_active else 'btn-toggle-off' }}"
+                    style="height: 38px; display: flex; align-items: center; gap: 8px;"
+                    title="{{ 'Carteira digital ligada' if subsite.efi_active else 'Carteira digital desligada' }}">
+                    <i class="ph ph-wallet"></i>
+                    <span>API: {{ 'Prod' if subsite.efi_active else 'OFF' }}</span>
+                </button>
+            </form>
+
+            <div style="background: rgba(255,255,255,0.05); padding: 5px 15px; border-radius: 20px; height: 38px; display: flex; align-items: center;">
                 <i class="ph ph-calendar"></i> &nbsp; {{ now.strftime('%d/%m') if now else '' }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Closing Schedule Section -->
+    <div class="glass-panel" style="margin-bottom: 25px; padding: 15px 20px; border: 1px solid rgba(255,255,255,0.05); background: rgba(255,255,255,0.01);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 40px; height: 40px; border-radius: 8px; background: rgba(255,187,0,0.1); color: var(--accent-yellow); display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                    <i class="ph ph-clock"></i>
+                </div>
+                <div>
+                    <h4 style="margin: 0; font-size: 1.1em;">Horário de Funcionamento</h4>
+                    <p class="text-muted" style="margin: 0; font-size: 0.85em;" id="schedule_label">
+                        {% if subsite.closing_time_active %}
+                            De {{ subsite.order_opening_time or '08:00' }} às {{ subsite.order_closing_time }}
+                        {% else %}
+                            Fechamento automático desativado
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+                <!-- Schedule Form -->
+                <form action="{{ url_for('admin.update_closing_schedule') }}" method="POST" style="display: flex; align-items: center; gap: 10px; margin: 0;">
+                    <input type="hidden" name="action" value="update_time" id="form_action_type">
+                    
+                    <div class="time-input-group">
+                        <span style="font-size: 0.75em; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Abre:</span>
+                        <input type="time" name="opening_time" value="{{ subsite.order_opening_time or '08:00' }}" 
+                            class="minimal-time-field">
+                    </div>
+
+                    <div class="time-input-group">
+                        <span style="font-size: 0.75em; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Fecha:</span>
+                        <input type="time" name="closing_time" value="{{ subsite.order_closing_time }}" 
+                            class="minimal-time-field">
+                    </div>
+                    
+                    <button type="submit" class="save-schedule-btn" title="Salvar Horários">
+                        <i class="ph ph-check" style="font-size: 20px;"></i>
+                    </button>
+                    
+                    <div style="height: 24px; width: 1px; background: rgba(255,255,255,0.1); margin: 0 5px;"></div>
+                    
+                    <button type="button" class="btn-secondary {{ 'btn-toggle-on' if subsite.closing_time_active else 'btn-toggle-off' }}" 
+                        onclick="document.getElementById('form_action_type').value='toggle_active'; this.form.submit();"
+                        style="height: 38px; display: flex; align-items: center; gap: 8px;"
+                        title="Ativar/Desativar fechamento automático">
+                        <i class="ph {{ 'ph-repeat' if subsite.closing_time_active else 'ph-repeat-off' }}"></i>
+                        <span id="auto_status_label">Auto: {{ 'ON' if subsite.closing_time_active else 'OFF' }}</span>
+                    </button>
+                </form>
+
+                <!-- Extension Timer -->
+                <div style="display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.03); padding: 5px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                    <span style="font-size: 0.85em; color: var(--text-muted);">Extender:</span>
+                    <form action="{{ url_for('admin.update_closing_schedule') }}" method="POST" style="margin: 0; display: flex; gap: 4px;">
+                        <input type="hidden" name="action" value="extend">
+                        <button type="submit" name="minutes" value="15" class="btn-secondary" style="padding: 2px 8px; font-size: 0.8em; height: 28px; min-height: 28px;">+15</button>
+                        <button type="submit" name="minutes" value="30" class="btn-secondary" style="padding: 2px 8px; font-size: 0.8em; height: 28px; min-height: 28px;">+30</button>
+                        <button type="submit" name="minutes" value="60" class="btn-secondary" style="padding: 2px 8px; font-size: 0.8em; height: 28px; min-height: 28px;">+60</button>
+                    </form>
+                    
+                    {% if subsite.temp_open_until %}
+                    <div style="height: 24px; width: 1px; background: rgba(255,255,255,0.1); margin: 0 5px;"></div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="badge" style="background: var(--success); color: var(--card-bg);" id="temp_timer">
+                            <i class="ph ph-hourglass-high"></i>
+                            Aberto até {{ subsite.temp_open_until.strftime('%H:%M') }}
+                        </span>
+                        <form action="{{ url_for('admin.update_closing_schedule') }}" method="POST" style="margin: 0;">
+                            <input type="hidden" name="action" value="clear_timer">
+                            <button type="submit" class="icon-btn minimal" style="color: var(--danger);" title="Remover Extensão">
+                                <i class="ph ph-x-circle" style="font-size: 18px;"></i>
+                            </button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
@@ -121,8 +323,7 @@
                 </thead>
                 <tbody>
                     {% for order in recent_orders %}
-                    <tr
-                        style="border-bottom: 1px solid rgba(255,255,255,0.05); hover: {background: rgba(255,255,255,0.02);}">
+                    <tr class="hover-row" style="border-bottom: 1px solid rgba(255,255,255,0.05);">
                         <td style="padding: 12px; font-weight: bold;">#{{ order.id }}</td>
                         <td style="padding: 12px;">{{ order.created_at.strftime('%H:%M') }}</td>
                         <td style="padding: 12px;">{{ order.user.name or order.user.petro_key }}</td>
@@ -151,12 +352,128 @@
         </div>
         {% endif %}
     </div>
+
+    <script>
+        function updateStoreStatus() {
+            fetch("{{ url_for('admin.get_store_status') }}")
+                .then(response => response.json())
+                .then(data => {
+                    const badge = document.getElementById('status_badge');
+                    const label = document.getElementById('schedule_label');
+                    
+                    if (data.is_open) {
+                        badge.style.background = 'rgba(0, 255, 100, 0.1)';
+                        badge.style.color = 'var(--success)';
+                        badge.style.borderColor = 'var(--success)';
+                        badge.innerHTML = '<i class="ph ph-door-open" style="margin-right: 5px;"></i> LOJA ABERTA';
+                    } else {
+                        badge.style.background = 'rgba(255, 50, 50, 0.1)';
+                        badge.style.color = 'var(--danger)';
+                        badge.style.borderColor = 'var(--danger)';
+                        badge.innerHTML = '<i class="ph ph-door-closed" style="margin-right: 5px;"></i> LOJA FECHADA';
+                    }
+
+                    if (data.closing_time_active) {
+                        label.innerText = `De ${data.opening_time || '08:00'} às ${data.closing_time}`;
+                    } else {
+                        label.innerText = 'Fechamento automático desativado';
+                    }
+                })
+                .catch(err => console.error("Error fetching status:", err));
+        }
+
+        // Poll every 30 seconds
+        setInterval(updateStoreStatus, 30000);
+        
+        // Also initial check
+        setTimeout(updateStoreStatus, 5000);
+    </script>
 </div>
+
+<!-- Closed Store Modal -->
+<div id="closedStoreModal" class="modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
+    <style>
+        @keyframes modalEntrance {
+            from { opacity: 0; transform: scale(0.9) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .modal-animate { animation: modalEntrance 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+    </style>
+    <div class="glass-panel modal-animate" style="max-width: 400px; text-align: center; padding: 40px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
+        <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(255, 50, 50, 0.1); color: var(--danger); display: flex; align-items: center; justify-content: center; font-size: 32px; margin: 0 auto 20px;">
+            <i class="ph ph-storefront-slash"></i>
+        </div>
+        <h3 style="margin-bottom: 10px;">Loja Fechada</h3>
+        <p class="text-muted" style="margin-bottom: 25px;">
+            No momento, não estamos aceitando pedidos. Por favor, volte mais tarde!
+        </p>
+        <a href="https://wa.me/{{ subsite.whatsapp_number }}" target="_blank" class="btn-primary" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px;">
+            <i class="ph-fill ph-whatsapp-logo"></i> Fale Conosco
+        </a>
+    </div>
+</div>
+
+<script>
+    let isStoreClosedModalShown = false;
+
+    function checkStoreStatus() {
+        // Only check if we are in a subsite-specific page
+        const currentSubsiteId = "{{ request.view_args.get('subsite_id') or '' }}";
+        const currentEndpoint = "{{ request.endpoint or '' }}";
+
+        if (currentEndpoint.includes('user.') && currentSubsiteId) {
+            fetch("{{ url_for('admin.get_store_status') }}")
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.is_open === false && !isStoreClosedModalShown) {
+                        document.getElementById('closedStoreModal').style.display = 'flex';
+                        isStoreClosedModalShown = true;
+                        
+                        // Disable order-related buttons if they exist
+                        document.querySelectorAll('.btn-neon, .btn-primary, .floating-cart').forEach(btn => {
+                            const btnText = btn.innerText.toLowerCase();
+                            if (btnText.includes('pedido') || btnText.includes('carrinho') || btn.classList.contains('floating-cart')) {
+                                btn.style.display = 'none';
+                            }
+                        });
+                    } else if (data && data.is_open === true && isStoreClosedModalShown) {
+                        document.getElementById('closedStoreModal').style.display = 'none';
+                        isStoreClosedModalShown = false;
+                        // Reload to restore buttons and state properly
+                        location.reload();
+                    }
+                })
+                .catch(err => console.error("Error polling status:", err));
+        }
+    }
+
+    // Poll every 60 seconds for customers
+    setInterval(checkStoreStatus, 60000);
+    
+    // Initial check on load
+    window.addEventListener('load', checkStoreStatus);
+</script>
 
 <style>
     .card:hover {
         transform: translateY(-5px);
-        border-color: var(--accent-cyan);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+
+    .btn-toggle-on {
+        border-color: var(--success) !important;
+        color: var(--success) !important;
+        background: rgba(0,255,100,0.1) !important;
+    }
+
+    .btn-toggle-off {
+        border-color: var(--danger) !important;
+        color: var(--danger) !important;
+        background: rgba(255,50,50,0.1) !important;
+    }
+
+    .hover-row:hover {
+        background: rgba(255,255,255,0.02);
     }
 </style>
 {% endblock %}

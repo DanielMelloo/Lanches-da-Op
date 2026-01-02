@@ -1,8 +1,10 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash, session, current_app
 from flask_login import login_required, current_user
-from models import Order, Item, Subsite, Status, User, Store, Sector, OrderItem
+from models import Order, Item, Subsite, Status, User, Store, Sector, OrderItem, get_sp_time
 from database import db
-import os
+import os, pytz
+from datetime import datetime
+import urllib.parse
 from werkzeug.utils import secure_filename
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
@@ -287,6 +289,7 @@ def stores():
         action = request.form.get('action')
         store_id = request.form.get('store_id')
         name = request.form.get('name')
+        whatsapp_number = request.form.get('whatsapp_number')
         
         if store_id:
             store = Store.query.get(store_id)
@@ -299,13 +302,31 @@ def stores():
                     db.session.delete(store)
                     db.session.commit()
                     flash('Loja excluída.', 'success')
-                elif action == 'update_name':
-                    store.name = name
+                elif action == 'manual_dispatch':
+                    if not store.whatsapp_number:
+                        flash(f'Loja {store.name} não possui WhatsApp cadastrado.', 'warning')
+                        return redirect(url_for('admin.stores'))
+
+                    # Signal the background dispatcher
+                    store.pending_manual_dispatch = True
                     db.session.commit()
-                    flash('Loja atualizada.', 'success')
+                    
+                    flash(f'Disparo manual para {store.name} solicitado ao sistema.', 'success')
+                    return redirect(url_for('admin.stores'))
+                else:
+                    # General update (name and/or whatsapp)
+                    store.name = name
+                    store.whatsapp_number = whatsapp_number
+                    db.session.commit()
+                    flash('Dados da loja atualizados.', 'success')
         else:
             # Create new store
-            new_store = Store(name=name, subsite_id=subsite_id, active=True)
+            new_store = Store(
+                name=name, 
+                whatsapp_number=whatsapp_number,
+                subsite_id=subsite_id, 
+                active=True
+            )
             db.session.add(new_store)
             db.session.commit()
             flash('Loja criada.', 'success')
@@ -622,7 +643,7 @@ def recalculate_order_totals(order_id):
         tax_val = subsite.fixed_tax_value or 0.0
     order.tax_fixed = tax_val
     
-    markup = 1.013 if subsite.require_payment else 1.0
+    markup = 1.013 if subsite.pass_pix_tax else 1.0
     order.total_general = (order.total_items + order.tax_fixed) * markup
     order.service_fee = order.total_general - order.total_items
     
@@ -859,10 +880,10 @@ def update_payment_settings():
     action = request.form.get('action')
     
     if action == 'toggle_require_payment':
-        new_state = not subsite.require_payment
-        subsite.require_payment = new_state
+        subsite.require_payment = not subsite.require_payment
+        db.session.commit()
         
-        if new_state: # Turning ON
+        if subsite.require_payment:
             # Move all "Confirmed" orders to "Pending"
             confirmed_status = Status.query.filter_by(name='Pedido Confirmado').first()
             pending_status = Status.query.filter_by(name='Pagamento Pendente').first()
@@ -881,12 +902,14 @@ def update_payment_settings():
              flash('Pagamento Obrigatório DESATIVADO.', 'success')
              
     elif action == 'toggle_pass_tax':
-        # Ensure the attribute exists (migration check)
-        if hasattr(subsite, 'pass_pix_tax'):
-            subsite.pass_pix_tax = not subsite.pass_pix_tax
-            flash(f'Repasse de Taxa Pix (1.3%) {"ATIVADO" if subsite.pass_pix_tax else "DESATIVADO"}.', 'success')
-        else:
-            flash('Erro: Campo pass_pix_tax não encontrado no banco de dados. Execute a migração.', 'error')
+        subsite.pass_pix_tax = not subsite.pass_pix_tax
+        db.session.commit()
+        flash(f'Repasse de Taxa Pix (1.3%) {"ATIVADO" if subsite.pass_pix_tax else "DESATIVADO"}.', 'success')
+
+    elif action == 'toggle_efi_active':
+        subsite.efi_active = not subsite.efi_active
+        db.session.commit()
+        flash(f'Integração PIX (API) {"ATIVADA" if subsite.efi_active else "DESATIVADA"}.', 'success')
     
     db.session.commit()
     
@@ -925,3 +948,74 @@ def update_tax_goal():
         flash('Valor inválido.', 'error')
         
     return redirect(url_for('admin.dashboard'))
+
+@admin_bp.route('/update_closing_schedule', methods=['POST'])
+@login_required
+def update_closing_schedule():
+    if current_user.role not in ['admin', 'admin_master']:
+        return redirect(url_for('index'))
+        
+    subsite_id = current_user.subsite_id
+    if current_user.role == 'admin_master':
+        subsite_id = session.get('master_subsite_id')
+        
+    subsite = Subsite.query.get_or_404(subsite_id)
+    
+    action = request.form.get('action')
+    
+    if action == 'update_time':
+        subsite.order_opening_time = request.form.get('opening_time', '08:00')
+        subsite.order_closing_time = request.form.get('closing_time', '23:59')
+        flash('Horário de funcionamento atualizado.', 'success')
+        
+    elif action == 'toggle_active':
+        subsite.closing_time_active = not subsite.closing_time_active
+        flash(f'Fechamento automático {"ATIVADO" if subsite.closing_time_active else "DESATIVADO"}.', 'success')
+        
+    elif action == 'extend':
+        minutes = int(request.form.get('minutes', 0))
+        if minutes > 0:
+            from datetime import timedelta
+            now = get_sp_time()
+            
+            # If already has a timer and it's in the future (localized), add to it
+            base_time = now
+            if subsite.temp_open_until:
+                target = subsite.temp_open_until
+                if target.tzinfo is None:
+                    target = pytz.timezone('America/Sao_Paulo').localize(target)
+                
+                if target > now:
+                    base_time = target
+            
+            subsite.temp_open_until = base_time + timedelta(minutes=minutes)
+            flash(f'Loja aberta por mais {minutes} minutos.', 'success')
+            
+    elif action == 'clear_timer':
+        subsite.temp_open_until = None
+        flash('Extensão de tempo removida.', 'success')
+        
+    elif action == 'manual_toggle':
+        # Toggle subsite active status and DISABLE auto-closing to avoid confusion
+        subsite.active = not subsite.active
+        subsite.closing_time_active = False
+        status_str = "ABERTA" if subsite.active else "FECHADA"
+        flash(f'Loja {status_str} manualmente. Fechamento automático desativado.', 'success')
+        
+    db.session.commit()
+    return redirect(url_for('admin.dashboard'))
+
+@admin_bp.route('/get_store_status')
+@login_required
+def get_store_status():
+    subsite_id = current_user.subsite_id
+    if current_user.role == 'admin_master':
+        subsite_id = session.get('master_subsite_id')
+    
+    subsite = Subsite.query.get_or_404(subsite_id)
+    return {
+        'is_open': subsite.is_open(),
+        'opening_time': subsite.order_opening_time,
+        'closing_time': subsite.order_closing_time,
+        'closing_time_active': subsite.closing_time_active
+    }

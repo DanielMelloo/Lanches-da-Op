@@ -202,6 +202,55 @@
         }
     </script>
 
+    <!-- Closed Store Modal -->
+    <div id="closedStoreModal" class="modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
+        <div class="glass-panel" style="max-width: 400px; text-align: center; padding: 40px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
+            <div style="width: 80px; height: 80px; background: rgba(255,50,50,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 25px; color: var(--danger);">
+                <i class="ph-fill ph-storefront" style="font-size: 40px;"></i>
+            </div>
+            <h2 style="margin-bottom: 15px; letter-spacing: 1px;">LOJA FECHADA</h2>
+            <p class="text-muted" style="margin-bottom: 30px; line-height: 1.6;">No momento não estamos aceitando novos pedidos. Por favor, volte mais tarde ou confira nosso horário de funcionamento.</p>
+            <button onclick="document.getElementById('closedStoreModal').style.display='none'" class="btn-secondary" style="width: 100%;">Entendido</button>
+        </div>
+    </div>
+
+    <script>
+        let isStoreClosedModalShown = false;
+
+        function checkStoreStatus() {
+            // Only check if we are in a subsite-specific page
+            {% if request.endpoint and 'user.' in request.endpoint and request.view_args.get('subsite_id') %}
+            fetch("{{ url_for('admin.get_store_status') }}")
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.is_open && !isStoreClosedModalShown) {
+                        document.getElementById('closedStoreModal').style.display = 'flex';
+                        isStoreClosedModalShown = true;
+                        
+                        // Disable order-related buttons if they exist
+                        document.querySelectorAll('.btn-neon, .btn-primary, .floating-cart').forEach(btn => {
+                            if (btn.innerText.toLowerCase().includes('pedido') || btn.innerText.toLowerCase().includes('carrinho') || btn.classList.contains('floating-cart')) {
+                                btn.style.display = 'none';
+                            }
+                        });
+                    } else if (data.is_open && isStoreClosedModalShown) {
+                        document.getElementById('closedStoreModal').style.display = 'none';
+                        isStoreClosedModalShown = false;
+                        // Reload to restore buttons and state properly
+                        location.reload();
+                    }
+                })
+                .catch(err => console.error("Error polling status:", err));
+            {% endif %}
+        }
+
+        // Poll every 60 seconds for customers
+        setInterval(checkStoreStatus, 60000);
+        
+        // Initial check on load
+        window.addEventListener('load', checkStoreStatus);
+    </script>
+
     <!-- Toast scripts or other JS -->
     <script>
         // Auto-dismiss alerts after 5 seconds

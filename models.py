@@ -12,6 +12,7 @@ class Subsite(db.Model):
     name = db.Column(db.String(50), unique=True, nullable=False)
     active = db.Column(db.Boolean, default=True)
     require_payment = db.Column(db.Boolean, default=False)
+    pass_pix_tax = db.Column(db.Boolean, default=False)
     
     # Advanced Tax Fields
     tax_mode = db.Column(db.String(20), default='fixed') # 'fixed' or 'variable'
@@ -27,15 +28,68 @@ class Subsite(db.Model):
     efi_pix_key = db.Column(db.String(255))
     efi_cert_name = db.Column(db.String(255)) # filename in certs/
     
-    # Background Scheduler Settings
-    payment_check_interval = db.Column(db.Integer, default=30)
-    enable_auto_check = db.Column(db.Boolean, default=True)
+    # Order Closing Schedule
+    order_opening_time = db.Column(db.String(5), default='08:00') # HH:MM
+    order_closing_time = db.Column(db.String(5), default='23:59') # HH:MM
+    closing_time_active = db.Column(db.Boolean, default=False)
+    temp_open_until = db.Column(db.DateTime) # Temporal extension
     
     # Relationships
     users = db.relationship('User', backref='subsite', lazy=True)
     stores = db.relationship('Store', backref='subsite', lazy=True)
     sectors = db.relationship('Sector', backref='subsite', lazy=True)
     orders = db.relationship('Order', backref='subsite', lazy=True)
+
+    def is_open(self):
+        """Checks if the subsite is currently accepting orders."""
+        if not self.active:
+            return False
+            
+        now = get_sp_time()
+        
+        # 1. Temporary extension override
+        if self.temp_open_until:
+            target = self.temp_open_until
+            if target.tzinfo is None:
+                target = pytz.timezone('America/Sao_Paulo').localize(target)
+            
+            if now < target:
+                return True
+                
+        # 2. Daily window check
+        if self.closing_time_active and self.order_opening_time and self.order_closing_time:
+            try:
+                # Convert strings to minutes for easier comparison
+                def to_minutes(t_str):
+                    h, m = map(int, t_str.split(':'))
+                    return h * 60 + m
+                
+                now_min = now.hour * 60 + now.minute
+                open_min = to_minutes(self.order_opening_time)
+                close_min = to_minutes(self.order_closing_time)
+                
+                if open_min == close_min:
+                    # If times are equal, it's effectively closed for automated window
+                    # unless they intend 24h, but usually they'd toggle 'Auto' off for that.
+                    print(f"DEBUG: Subsite {self.name} closed (Equal Times). Open: {open_min}, Close: {close_min}")
+                    return False
+                    
+                if open_min < close_min:
+                    # Normal shift (e.g. 08:00 to 22:00)
+                    if not (open_min <= now_min < close_min):
+                        print(f"DEBUG: Subsite {self.name} closed (Normal Shift). Now: {now_min}, Open: {open_min}, Close: {close_min}")
+                        return False
+                else:
+                    # Overnight shift (e.g. 18:00 to 02:00)
+                    # Open if: now >= 18:00 OR now < 02:00
+                    if not (now_min >= open_min or now_min < close_min):
+                        print(f"DEBUG: Subsite {self.name} closed (Overnight). Now: {now_min}, Open: {open_min}, Close: {close_min}")
+                        return False
+            except Exception as e:
+                print(f"Error checking schedule: {e}")
+                pass # Fallback to open if misconfigured
+                
+        return True
 
 class User(db.Model, UserMixin):
     __tablename__ = 'users'
@@ -66,6 +120,8 @@ class Store(db.Model):
     scraper_config = db.Column(db.JSON)
     scraper_status = db.Column(db.String(20), default='idle')
     scraper_last_run = db.Column(db.DateTime)
+    whatsapp_number = db.Column(db.String(20))
+    pending_manual_dispatch = db.Column(db.Boolean, default=False)
     
     subsite_id = db.Column(db.Integer, db.ForeignKey('subsites.id'), nullable=False)
 
@@ -117,6 +173,7 @@ class Order(db.Model):
     payment_status = db.Column(db.String(20), default='pending')
     pix_charge_id = db.Column(db.String(100))
     pix_code_copy_paste = db.Column(db.Text)
+    whatsapp_dispatched = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=get_sp_time)
     
     user = db.relationship('User', backref='orders')

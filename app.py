@@ -32,6 +32,11 @@ def create_app():
         
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+    # Persistent Sessions (Remember Me)
+    from datetime import timedelta
+    app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=30)
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
+
     init_db(app)
     login_manager.init_app(app)
 

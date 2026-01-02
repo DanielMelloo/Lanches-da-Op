@@ -28,11 +28,19 @@
 
             <div class="w-full">
                 <h2 class="text-accent mb-sm">{{ sub.name }}</h2>
-                <p class="text-muted mb-md">Acessar cardápio e fazer pedidos</p>
+                {% if sub.is_open() %}
+                    <p class="text-muted mb-md">Acessar cardápio e fazer pedidos</p>
+                {% else %}
+                    <div style="margin-bottom: 15px;">
+                        <span class="badge" style="background: var(--danger); color: white; border-color: var(--danger);">
+                            <i class="ph ph-clock-slash"></i> FECHADO
+                        </span>
+                    </div>
+                {% endif %}
             </div>
 
-            <a href="{{ url_for('auth.login_subsite', subsite_id=sub.id) }}" class="btn-neon btn-block">
-                Entrar
+            <a href="{{ url_for('auth.login_subsite', subsite_id=sub.id) }}" class="btn-neon btn-block {{ '' if sub.is_open() else 'btn-secondary' }}" style="{{ '' if sub.is_open() else 'opacity: 0.7;' }}">
+                {{ 'Entrar' if sub.is_open() else 'Ver Cardápio (Fechado)' }}
             </a>
         </div>
         {% else %}

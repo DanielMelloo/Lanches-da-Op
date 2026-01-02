@@ -81,6 +81,12 @@
         background: var(--card-bg);
         color: white;
     }
+    .role-master { color: var(--accent-purple) !important; font-weight: bold; }
+    .role-admin  { color: var(--accent-cyan) !important; font-weight: bold; }
+    .role-user   { color: var(--text-muted) !important; font-weight: bold; }
+
+    .status-active { color: var(--success) !important; display: flex; align-items: center; gap: 5px; }
+    .status-inactive { color: var(--danger) !important; display: flex; align-items: center; gap: 5px; }
 </style>
 
 <div class="glass-panel" style="padding: 30px;">
@@ -127,31 +133,41 @@
                     </form>
 
                     <!-- Phone -->
-                    <form method="POST" style="margin: 0; flex: 1;">
-                        <input type="hidden" name="user_id" value="{{ user.id }}">
-                        <input type="hidden" name="action" value="update_phone">
-                        <input type="text" name="phone" value="{{ user.phone or '' }}"
-                            class="inline-edit-field phone-mask" onchange="this.form.submit()"
-                            style="font-size: 0.9em; color: var(--text-muted);" placeholder="Telefone" title="Telefone">
-                    </form>
+                    <div style="display: flex; align-items: center; gap: 5px; flex: 1;">
+                        <form method="POST" action="{{ url_for('master.manage_users', action='update_phone', user_id=user.id) }}" style="display: flex; align-items: center; gap: 8px;">
+                            <i class="ph ph-phone" style="font-size: 0.9rem; color: var(--text-muted);"></i>
+                            <input type="text" name="phone" value="{{ user.phone or '' }}"
+                                class="inline-edit-field phone-mask" onchange="this.form.submit()"
+                                style="font-size: 0.9em; color: var(--text-muted); width: 130px;" placeholder="Telefone" title="Telefone">
+                        </form>
+                        {% if user.phone %}
+                        {% set clean_phone = user.phone|replace(' ', '')|replace('-', '')|replace('(', '')|replace(')', '')|replace('+', '') %}
+                        {# Ensure Brazilian numbers have 55 prefix #}
+                        {% if clean_phone|length == 11 or clean_phone|length == 10 %}
+                            {% set final_phone = '55' ~ clean_phone %}
+                        {% else %}
+                            {% set final_phone = clean_phone %}
+                        {% endif %}
+                        <a href="https://wa.me/{{ final_phone }}" target="_blank" 
+                           class="icon-btn minimal" style="color: #25D366; padding: 0;" title="WhatsApp">
+                            <i class="ph ph-whatsapp-logo" style="font-size: 20px;"></i>
+                        </a>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
 
             <!-- Role -->
             <div>
-                {% if user.role == 'admin_master' %}
-                <span style="color: var(--accent-purple); display: flex; align-items: center; gap: 5px;">
-                    <i class="ph ph-crown"></i> Master
-                </span>
-                {% elif user.role == 'admin' %}
-                <span style="color: var(--accent-cyan); display: flex; align-items: center; gap: 5px;">
-                    <i class="ph ph-shield"></i> Admin
-                </span>
-                {% else %}
-                <span style="color: var(--text-muted); display: flex; align-items: center; gap: 5px;">
-                    <i class="ph ph-user"></i> User
-                </span>
-                {% endif %}
+                <form method="POST" style="margin: 0;">
+                    <input type="hidden" name="user_id" value="{{ user.id }}">
+                    <input type="hidden" name="action" value="update_role">
+                    <select name="role" class="minimal-select {{ 'role-master' if user.role == 'admin_master' else ('role-admin' if user.role == 'admin' else 'role-user') }}" onchange="this.form.submit()">
+                        <option value="admin_master" {{ 'selected' if user.role == 'admin_master' else '' }}>Master Admin</option>
+                        <option value="admin" {{ 'selected' if user.role == 'admin' else '' }}>Admin</option>
+                        <option value="user" {{ 'selected' if user.role == 'user' else '' }}>Usuário</option>
+                    </select>
+                </form>
             </div>
 
             <!-- Subsite -->
@@ -177,8 +193,7 @@
                     <input type="hidden" name="action" value="toggle_active">
                     <button type="submit" class="icon-btn minimal" style="width: 100%; text-align: left; padding: 0;"
                         title="Alternar Status">
-                        <span
-                            style="color: {{ 'var(--success)' if user.active else 'var(--danger)' }}; display: flex; align-items: center; gap: 5px;">
+                        <span class="{{ 'status-active' if user.active else 'status-inactive' }}">
                             <i class="ph {{ 'ph-toggle-right' if user.active else 'ph-toggle-left' }}"
                                 style="font-size: 24px;"></i>
                             {{ 'Ativo' if user.active else 'Inativo' }}

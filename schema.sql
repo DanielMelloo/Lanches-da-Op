@@ -1,7 +1,7 @@
 -- Database Schema for Lanches da Operação
 
-CREATE DATABASE IF NOT EXISTS lanches_db;
-USE lanches_db;
+-- CREATE DATABASE IF NOT EXISTS lanches_db;
+-- USE lanches_db;
 
 -- Subsites
 CREATE TABLE IF NOT EXISTS subsites (

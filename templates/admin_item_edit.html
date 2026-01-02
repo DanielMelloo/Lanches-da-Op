@@ -49,19 +49,14 @@
                 <input type="file" name="image_file" class="input-field" style="color: white;">
             </div>
 
-            <!-- Subitems JSON -->
-            <div>
-                <label>Configuração de Subitens (JSON)</label>
-                <textarea name="subitems_json" rows="10"
-                    style="width: 100%; padding: 10px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 8px; font-family: monospace;">{{ item.subitems_json | tojson if item.subitems_json else '' }}</textarea>
-                <small class="text-muted">Defina os grupos de opções, ex: [{"group": "Molho", "type": "radio",
-                    "options": ["Maionese", "Ketchup"]}]</small>
-            </div>
+            <!-- Subitems Dynamic Editor -->
+            {% include "partials/_subitems_editor.html" %}
 
             <!-- Actions -->
             <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button type="submit" class="btn-neon" style="flex: 1;"><i class="ph ph-floppy-disk"></i> Salvar
-                    Alterações</button>
+                <button type="submit" class="btn-neon" style="flex: 1;" onclick="serializeSubitems()">
+                    <i class="ph ph-floppy-disk"></i> Salvar Alterações
+                </button>
                 <a href="{{ url_for('admin.items') }}" class="btn-secondary"
                     style="text-decoration: none; text-align: center;">Cancelar</a>
             </div>

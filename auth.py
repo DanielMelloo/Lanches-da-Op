@@ -56,7 +56,12 @@ def login_admin():
         user = User.query.filter(User.petro_key == petro_key, User.role.in_(['admin', 'admin_master'])).first()
         
         if user and user.password_hash and check_password_hash(user.password_hash, password):
-            login_user(user)
+            remember = 'remember' in request.form
+            login_user(user, remember=remember)
+            
+            from flask import session
+            session.permanent = True
+            
             if user.role == 'admin_master':
                  flash(f'Bem-vindo, Master {user.name}!', 'success')
                  return redirect(url_for('master.dashboard'))

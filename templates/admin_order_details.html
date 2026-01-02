@@ -16,10 +16,19 @@
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
             <div>
                 <p style="color: var(--text-muted); margin-bottom: 5px;">Cliente</p>
-                <p style="font-size: 18px;"><strong>{{ order.user.name }}</strong></p>
-                <p style="font-size: 14px; color: var(--text-muted);">
-                    Chave: {{ order.user.petro_key }} | Tel: {{ order.user.phone or '-' }}
-                </p>
+                <p style="font-size: 18px; margin-bottom: 5px;"><strong>{{ order.user.name }}</strong></p>
+                <div style="font-size: 14px; color: var(--text-muted); display: flex; align-items: center; gap: 8px;">
+                    <span>Chave: {{ order.user.petro_key }}</span>
+                    <span>|</span>
+                    <span>Tel: {{ order.user.phone or '-' }}</span>
+                    {% if order.user.phone %}
+                    {% set clean_phone = order.user.phone|replace(' ', '')|replace('-', '')|replace('(', '')|replace(')', '')|replace('+', '') %}
+                    <a href="https://wa.me/{{ clean_phone }}" target="_blank" 
+                       class="icon-btn minimal" style="color: #25D366; padding: 0;" title="WhatsApp">
+                        <i class="ph ph-whatsapp-logo" style="font-size: 20px;"></i>
+                    </a>
+                    {% endif %}
+                </div>
             </div>
 
             <div>
@@ -270,10 +279,8 @@
                 </div>
                 <div>
                     <label style="font-size: 0.8em; display: block; color: var(--success);">TOTAL</label>
-                    <input type="number" step="0.01" name="total_general" value="{{ " %.2f"|format(order.total_general)
-                        }}" class="input-field"
-                        style="font-weight: bold; color: var(--success); border-color: var(--success);">
-                </div>
+                    <input type="number" step="0.01" name="total_general" value="{{ " %.2f"|format(order.total_general) }}" 
+                        class="input-field" style="font-weight: bold; color: var(--success); border-color: var(--success);">
             </div>
 
             <div style="text-align: right; margin-top: 15px;">
