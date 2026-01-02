@@ -77,17 +77,57 @@ def run_dispatcher():
             else:
                 today = datetime.now().date()
                 query = query.filter(db.func.date(Order.created_at) == today)
+                print(f"[DEBUG] Force resend for {store.name} on date {today}")
 
             if specific_subsite_id:
                 query = query.filter(Order.subsite_id == specific_subsite_id)
             
             pending_orders = query.all()
+            print(f"[DEBUG] Store {store.name}: Found {len(pending_orders)} orders (Force={force_resend})")
+            
             if not pending_orders:
                 return
 
             for order in pending_orders:
                 orders_to_mark.add(order)
-        
+                
+                # Construct items list for the current order
+                # Construct items list for the current order
+                items_for_order = []
+                # Only items for THIS store
+                relevant_items = [oi for oi in order.order_items if oi.item and oi.item.store_id == store.id]
+                
+                for oi in relevant_items:
+                    # Extract subitems
+                    subtext = ""
+                    if oi.subitems_json:
+                        parts = []
+                        for group in oi.subitems_json:
+                            opts = group.get('options', [])
+                            if opts:
+                                opt_names = []
+                                for o in opts:
+                                    if isinstance(o, dict): opt_names.append(f"{o.get('option')} x{o.get('qty', 1)}")
+                                    else: opt_names.append(str(o))
+                                parts.append(f"{group.get('title', group.get('group', ''))}: {', '.join(opt_names)}")
+                        subtext = " | ".join(parts)
+
+                    item_data = {
+                        'name': oi.item.name,
+                        'quantity': oi.quantity,
+                        'price': oi.price_at_moment,
+                        'subitems': subtext
+                    }
+                    items_for_order.append(item_data)
+
+                # Sanitize Number
+                clean_num = re.sub(r'\D', '', store.whatsapp_number)
+                if len(clean_num) in [10, 11]: clean_num = '55' + clean_num
+                
+                if clean_num not in dispatches: dispatches[clean_num] = {}
+                if store.id not in dispatches[clean_num]: dispatches[clean_num][store.id] = {}
+                dispatches[clean_num][store.id][order.id] = items_for_order
+
         processed_stores_in_cycle = set()
 
         # Helper to avoid duplicates
@@ -114,16 +154,12 @@ def run_dispatcher():
             
             # If already processed (e.g. standard close), we might miss "Dispatched" orders if we don't force.
             # Let's remove from dispatches first if re-processing.
-            if s.id in processed_stores_in_cycle:
-                 # It was processed as 'Closed' (only new orders). 
-                 # We want 'Force' (all orders).
-                 # So we clear the previous (partial) data for this store and re-run.
-                 num = re.sub(r'\D', '', s.whatsapp_number) if s.whatsapp_number else None
-                 if num and len(num) in [10, 11]: num = '55' + num
-                 if num and num in dispatches and s in dispatches[num]:
-                     del dispatches[num][s]
+            num = re.sub(r'\D', '', s.whatsapp_number) if s.whatsapp_number else None
+            if num and len(num) in [10, 11]: num = '55' + num
+            if num and num in dispatches and s.id in dispatches[num]:
+                 del dispatches[num][s.id]
             
-            process_store_orders(s, force_resend=True)
+            run_processing(s, force=True)
             processed_stores_in_cycle.add(s.id)
             
             s.pending_manual_dispatch = False
@@ -132,7 +168,7 @@ def run_dispatcher():
             num = re.sub(r'\D', '', s.whatsapp_number) if s.whatsapp_number else None
             if num and len(num) in [10, 11]: num = '55' + num
             
-            if num and (num not in dispatches or s not in dispatches[num]):
+            if num and (num not in dispatches or s.id not in dispatches[num]):
                  print(f" -> No pending orders found for {s.name}.")
 
         if not dispatches:
@@ -152,7 +188,7 @@ def run_dispatcher():
                 headless=False,
                 args=['--no-sandbox']
             )
-            page = browser.new_page()
+            page = browser.pages[0] if browser.pages else browser.new_page()
             print("Opening WhatsApp Web...")
             page.goto("https://web.whatsapp.com/")
             
@@ -163,7 +199,10 @@ def run_dispatcher():
                 page.wait_for_selector('div[contenteditable="true"]', timeout=300000)
 
             for num, stores_dict in dispatches.items():
-                for store, orders_data in stores_dict.items():
+                for store_id, orders_data in stores_dict.items():
+                    store = Store.query.get(store_id) # Reload store object safely
+                    if not store: continue
+                    
                     operations = [] # List of (text, [order_ids])
 
                     if store.whatsapp_template and store.whatsapp_template.strip():
