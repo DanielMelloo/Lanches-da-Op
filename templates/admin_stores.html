@@ -212,41 +212,47 @@
             </div>
         </div>
 +
-+        <!-- Template Editor -->
-+        <div style="width: 100%;">
-+            <details style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 10px; border: 1px solid rgba(255,255,255,0.05);">
-+                <summary style="cursor: pointer; color: var(--accent-cyan); font-weight: bold; font-size: 0.9em; user-select: none;">
-+                    <i class="ph ph-chat-text-dots"></i> Configurar Mensagem WhatsApp
-+                </summary>
-+                
-+                <form method="POST" style="margin-top: 15px;">
-+                    <input type="hidden" name="store_id" value="{{ store.id }}">
-+                    <input type="hidden" name="name" value="{{ store.name }}"> <!-- Keep name -->
-+                    <input type="hidden" name="whatsapp_number" value="{{ store.whatsapp_number }}"> <!-- Keep number -->
-+
-+                    <div style="margin-bottom: 10px;">
-+                        <label style="font-size: 0.8em; color: var(--text-muted);">Variáveis Disponíveis (Clique para inserir):</label>
-+                        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 5px;">
-+                            <button type="button" class="chip" onclick="insertVar(this, '{loja}')">{loja}</button>
-+                            <button type="button" class="chip" onclick="insertVar(this, '{id_pedido}')">{id_pedido}</button>
-+                            <button type="button" class="chip" onclick="insertVar(this, '{data}')">{data}</button>
-+                            <button type="button" class="chip" onclick="insertVar(this, '{itens}')">{itens}</button>
-+                            <button type="button" class="chip" onclick="insertVar(this, '{total}')">{total}</button>
-+                            <button type="button" class="chip" onclick="insertVar(this, '{cliente}')">{cliente}</button>
-+                        </div>
-+                    </div>
-+
-+                    <textarea name="whatsapp_template" class="template-editor" rows="6" placeholder="Olá! Novo pedido chegando...&#10;Loja: {loja}..."
-+                    >{{ store.whatsapp_template or '' }}</textarea>
-+                    
-+                    <div style="text-align: right; margin-top: 10px;">
-+                        <button type="submit" class="btn-primary" style="padding: 5px 15px; font-size: 0.9em;">
-+                            <i class="ph ph-floppy-disk"></i> Salvar Template
-+                        </button>
-+                    </div>
-+                </form>
-+            </details>
-+        </div>
+        <!-- Template Editor -->
+        <div style="width: 100%;">
+            <details style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 10px; border: 1px solid rgba(255,255,255,0.05);">
+                <summary style="cursor: pointer; color: var(--accent-cyan); font-weight: bold; font-size: 0.9em; user-select: none;">
+                    <i class="ph ph-chat-text-dots"></i> Configurar Mensagem WhatsApp
+                </summary>
+                
+                <form method="POST" style="margin-top: 15px;">
+                    <input type="hidden" name="store_id" value="{{ store.id }}">
+                    <input type="hidden" name="name" value="{{ store.name }}"> <!-- Keep name -->
+                    <input type="hidden" name="whatsapp_number" value="{{ store.whatsapp_number }}"> <!-- Keep number -->
+
+                    <div style="margin-bottom: 10px;">
+                        <label style="font-size: 0.8em; color: var(--text-muted); display: block; margin-bottom: 5px;">
+                            Variáveis (Clique para inserir):
+                        </label>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <button type="button" class="chip" onclick="insertVar(this, '{loja}')">Loja</button>
+                            <button type="button" class="chip" onclick="insertVar(this, '{id_pedido}')">ID Pedido</button>
+                            <button type="button" class="chip" onclick="insertVar(this, '{cliente}')">Cliente</button>
+                            <button type="button" class="chip" onclick="insertVar(this, '{telefone}')">Telefone</button>
+                            <button type="button" class="chip" onclick="insertVar(this, '{endereco}')">Endereço</button>
+                            <button type="button" class="chip" onclick="insertVar(this, '{pagamento}')">Pagamento</button>
+                            <button type="button" class="chip" onclick="insertVar(this, '{data}')">Data</button>
+                            <button type="button" class="chip" onclick="insertVar(this, '{itens}')">Itens</button>
+                            <button type="button" class="chip" onclick="insertVar(this, '{total}')">Total</button>
+                            <button type="button" class="chip" onclick="insertVar(this, '{observacao}')">Obs</button>
+                        </div>
+                    </div>
+
+                    <textarea name="whatsapp_template" class="template-editor" rows="6" placeholder="Olá! 🍔&#10;Pedido {id_pedido} confirmado!&#10;{itens}&#10;Total: {total}&#10;Pagamento: {pagamento}"
+                    >{{ store.whatsapp_template or '' }}</textarea>
+                    
+                    <div style="text-align: right; margin-top: 10px;">
+                        <button type="submit" class="btn-primary" style="padding: 5px 15px; font-size: 0.9em;">
+                            <i class="ph ph-floppy-disk"></i> Salvar Template
+                        </button>
+                    </div>
+                </form>
+            </details>
+        </div>
 
 
         <div style="display: flex; gap: 12px; align-items: center;">
