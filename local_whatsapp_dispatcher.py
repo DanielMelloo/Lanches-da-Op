@@ -140,7 +140,9 @@ def run_dispatcher():
         for subsite in closed_subsites:
             subsite_stores = Store.query.filter_by(subsite_id=subsite.id).all()
             for s in subsite_stores:
-                run_processing(s, subsite.id, force_resend=False)
+                # Check Auto-Send Flag
+                if getattr(s, 'auto_send_on_close', True):
+                    run_processing(s, subsite.id, force_resend=False)
         
         # Process manual triggers
         for s in manual_stores:

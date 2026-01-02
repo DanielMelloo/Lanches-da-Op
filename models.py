@@ -121,7 +121,11 @@ class Store(db.Model):
     scraper_status = db.Column(db.String(20), default='idle')
     scraper_last_run = db.Column(db.DateTime)
     whatsapp_number = db.Column(db.String(20))
-    whatsapp_template = db.Column(db.Text) # Custom message template
+    whatsapp_template = db.Column(db.Text) # Custom template per store
+    
+    # Flags
+    active = db.Column(db.Boolean, default=True)
+    auto_send_on_close = db.Column(db.Boolean, default=True) # Control auto-dispatch
     pending_manual_dispatch = db.Column(db.Boolean, default=False)
     
     subsite_id = db.Column(db.Integer, db.ForeignKey('subsites.id'), nullable=False)

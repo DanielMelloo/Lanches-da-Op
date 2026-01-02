@@ -335,6 +335,9 @@ def stores():
                     template = request.form.get('whatsapp_template')
                     if template is not None:
                         store.whatsapp_template = template
+
+                    # Update Auto-Dispatch Flag
+                    store.auto_send_on_close = 'auto_send_on_close' in request.form
                         
                     db.session.commit()
                     flash('Dados da loja atualizados.', 'success')

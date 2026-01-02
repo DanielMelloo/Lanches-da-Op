@@ -1,6 +1,47 @@
 {% extends "base.html" %}
 
-{% block title %}Gerenciar Lojas{% endblock %}
+{% block title %}Gerenciar Lojas
+<style>
+    /* Modal Styles */
+    .custom-modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+        display: none; justify-content: center; align-items: center; z-index: 9999;
+    }
+    .custom-modal {
+        background: rgba(30,30,40, 0.95);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 16px;
+        padding: 25px;
+        width: 90%; max-width: 400px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        color: #fff;
+        transform: translateY(20px); opacity: 0;
+        transition: all 0.3s ease;
+    }
+    .custom-modal.active { transform: translateY(0); opacity: 1; }
+    .custom-modal h3 { margin-top: 0; color: var(--primary); }
+    .custom-modal p { color: #ccc; line-height: 1.5; }
+    .custom-modal-actions { margin-top: 25px; display: flex; justify-content: flex-end; gap: 10px; }
+    .custom-modal input {
+        width: 100%; padding: 10px; margin-top: 10px;
+        background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 8px; color: #fff; outline: none;
+    }
+    .custom-modal input:focus { border-color: var(--primary); }
+</style>
+
+<!-- Generic Modal Container -->
+<div id="genericModal" class="custom-modal-overlay">
+    <div class="custom-modal">
+        <h3 id="modalTitle">Título</h3>
+        <div id="modalBody"></div>
+        <div id="modalActions" class="custom-modal-actions">
+            <!-- Buttons specific to context -->
+        </div>
+    </div>
+</div>
+{% endblock %}
 
 {% block content %}
 <style>
@@ -205,6 +246,55 @@
         }
     }
     
+    // --- Modal Logic ---
+    function closeModal() {
+        const overlay = document.getElementById('genericModal');
+        const modal = overlay.querySelector('.custom-modal');
+        modal.classList.remove('active');
+        setTimeout(() => { overlay.style.display = 'none'; }, 200);
+    }
+
+    function showModalCommon(title, bodyHtml, buttonsHtml) {
+        const overlay = document.getElementById('genericModal');
+        const modal = overlay.querySelector('.custom-modal');
+        
+        document.getElementById('modalTitle').textContent = title;
+        document.getElementById('modalBody').innerHTML = bodyHtml;
+        document.getElementById('modalActions').innerHTML = buttonsHtml;
+        
+        overlay.style.display = 'flex';
+        setTimeout(() => { modal.classList.add('active'); }, 10);
+    }
+
+    window.promptModal = function(title, placeholder, onConfirm) {
+        const body = `<input type="text" id="modalInput" placeholder="${placeholder}" onkeydown="if(event.key==='Enter') document.getElementById('btnConfirm').click()">`;
+        const buttons = `
+            <button onclick="closeModal()" class="btn-secondary" style="background:transparent; border:1px solid #555;">Cancelar</button>
+            <button id="btnConfirm" class="btn-primary">Salvar</button>
+        `;
+        showModalCommon(title, body, buttons);
+        setTimeout(() => document.getElementById('modalInput').focus(), 100);
+        document.getElementById('btnConfirm').onclick = () => {
+            const val = document.getElementById('modalInput').value;
+            if(val) { closeModal(); onConfirm(val); }
+            else { document.getElementById('modalInput').style.borderColor = 'red'; }
+        };
+    };
+
+    window.confirmModal = function(title, message, onConfirm) {
+        const buttons = `
+            <button onclick="closeModal()" class="btn-secondary" style="background:transparent; border:1px solid #555;">Não</button>
+            <button id="btnConfirm" class="btn-primary" style="background: var(--primary);">Sim</button>
+        `;
+        showModalCommon(title, `<p>${message}</p>`, buttons);
+        document.getElementById('btnConfirm').onclick = () => { closeModal(); onConfirm(); };
+    };
+
+    window.alertModal = function(title, message) {
+        const buttons = `<button onclick="closeModal()" class="btn-primary">OK</button>`;
+        showModalCommon(title, `<p>${message}</p>`, buttons);
+    };
+
     // Auto-mask on load for existing values
     document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('input[name="whatsapp_number"]').forEach(input => {
@@ -234,69 +324,66 @@
                 select.appendChild(opt);
             });
         } catch (e) {
-            console.error(e);
+            console.log(e);
         }
     }
 
     async function savePreset() {
         const textarea = document.querySelector('textarea[name="whatsapp_template"]');
         const content = textarea.value;
-        if(!content) return alert('Template vazio.');
+        if(!content) return alertModal('Atenção', 'O modelo está vazio.');
         
-        const name = prompt("Nome do Modelo (ex: Promoção Terça):");
-        if(!name) return;
-        
-        try {
-            const res = await fetch('/admin/templates/save', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({name, content})
-            });
-            const data = await res.json();
-            if(data.success) {
-                alert('Modelo salvo!');
-                loadPresets();
-            } else {
-                alert('Erro: ' + data.error);
+        promptModal('Nome do Modelo', 'Ex: Promoção Feriado', async (name) => {
+            try {
+                const res = await fetch('/admin/templates/save', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({name, content})
+                });
+                const data = await res.json();
+                if(data.success) {
+                    alertModal('Sucesso', 'Modelo "' + name + '" salvo!');
+                    loadPresets();
+                } else {
+                    alertModal('Erro', data.error || 'Erro desconhecido');
+                }
+            } catch(e) {
+                alertModal('Erro', 'Erro de conexão.');
             }
-        } catch(e) {
-            alert('Erro ao salvar.');
-        }
+        });
     }
 
     function loadPreset(id) {
         if(!id) return;
         const p = presetsData.find(x => x.id == id);
         if(p) {
-            if(confirm('Substituir o texto atual pelo modelo "' + p.name + '"?')) {
+            confirmModal('Carregar Modelo?', 'Deseja substituir o texto atual pelo modelo "'+p.name+'"?', () => {
                 const textarea = document.querySelector('textarea[name="whatsapp_template"]');
                 textarea.value = p.content;
-            } else {
-                document.getElementById('templateSelect').value = "";
-            }
+            });
         }
     }
 
     async function deletePreset() {
         const select = document.getElementById('templateSelect');
         const id = select.value;
-        if(!id) return alert('Selecione um modelo para excluir.');
+        if(!id) return alertModal('Atenção', 'Selecione um modelo para excluir.');
         
-        if(!confirm('Excluir este modelo permanentemente?')) return;
-        
-        try {
-            const res = await fetch('/admin/templates/' + id, { method: 'DELETE' });
-            const data = await res.json();
-            if(data.success) {
-                loadPresets();
-            } else {
-                alert('Erro: ' + data.error);
+        confirmModal('Excluir?', 'Tem certeza que deseja apagar este modelo permanentemente?', async () => {
+            try {
+                const res = await fetch('/admin/templates/' + id, { method: 'DELETE' });
+                const data = await res.json();
+                if(data.success) {
+                    loadPresets();
+                    alertModal('Sucesso', 'Modelo excluído.');
+                } else {
+                    alertModal('Erro', data.error || 'Erro ao excluir');
+                }
+            } catch(e) {
+                alertModal('Erro', 'Erro de conexão.');
             }
-        } catch(e) {
-            alert('Erro ao excluir.');
-        }
+        });
     }
-</script>
 
 <div class="glass-panel" style="padding: 30px;">
     <h2><i class="ph ph-storefront"></i> Gerenciar Lojas</h2>
@@ -355,10 +442,19 @@
                             </div>
                         </div>
 
-                        <div style="padding-bottom: 8px;">
+                        <div style="padding-bottom: 8px; display: flex; align-items: center; gap: 15px;">
+                             <!-- Status Indicator -->
                              <small style="color: {{ '#4CAF50' if store.active else 'var(--text-muted)' }}; font-weight: bold;">
                                 {{ '● Ativa' if store.active else '○ Oculta' }}
-                            </small>
+                             </small>
+
+                             <!-- Auto-Send Toggle -->
+                             <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;" title="Enviar WhatsApp autom. ao fechar?">
+                                <input type="checkbox" name="auto_send_on_close" value="true" 
+                                    {{ 'checked' if store.auto_send_on_close else '' }} 
+                                    onchange="this.form.submit()">
+                                <span style="font-size: 0.8em; color: #ccc;">Auto-Envio</span>
+                             </label>
                         </div>
                     </div>
 
