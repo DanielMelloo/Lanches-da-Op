@@ -403,6 +403,12 @@
         });
     }
 
+    // Initialize Presets on Load
+    document.addEventListener('DOMContentLoaded', () => {
+        loadPresets();
+    });
+</script>
+
 <div class="glass-panel" style="padding: 30px;">
     <h2><i class="ph ph-storefront"></i> Gerenciar Lojas</h2>
     <p class="text-muted">Categorias de produtos (ex: Lanches, Bebidas)</p>
