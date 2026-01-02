@@ -144,6 +144,8 @@
         outline: none;
         border-color: var(--accent-cyan);
     }
+    .valid-phone { border-color: #4CAF50 !important; color: #4CAF50 !important; }
+    .invalid-phone { border-color: #F44336 !important; color: #F44336 !important; }
 </style>
 <script>
     function insertVar(btn, text) {
@@ -160,6 +162,55 @@
         textarea.selectionStart = textarea.selectionEnd = start + text.length;
         textarea.focus();
     }
+
+    function maskPhone(input) {
+        let value = input.value.replace(/\D/g, ''); // Strip non-digits
+        
+        // Limit to 11 digits
+        if (value.length > 11) value = value.slice(0, 11);
+
+        // Apply formatting
+        if (value.length > 10) {
+            // (11) 99999-9999
+            value = value.replace(/^(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+        } else if (value.length > 6) {
+             // (11) 9999-9999
+             value = value.replace(/^(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3');
+        } else if (value.length > 2) {
+             // (11) 9999
+             value = value.replace(/^(\d{2})(\d{0,5})/, '($1) $2');
+        } else if (value.length > 0) {
+             // (11
+             value = value.replace(/^(\d{0,2})/, '($1');
+        }
+        
+        input.value = value;
+        validatePhone(input);
+    }
+
+    function validatePhone(input) {
+        const digits = input.value.replace(/\D/g, '').length;
+        const isValid = digits === 10 || digits === 11;
+        
+        if (input.value.length > 0) {
+            if (isValid) {
+                input.classList.add('valid-phone');
+                input.classList.remove('invalid-phone');
+            } else {
+                input.classList.add('invalid-phone');
+                input.classList.remove('valid-phone');
+            }
+        } else {
+            input.classList.remove('valid-phone', 'invalid-phone');
+        }
+    }
+    
+    // Auto-mask on load for existing values
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('input[name="whatsapp_number"]').forEach(input => {
+             maskPhone(input);
+        });
+    });
 </script>
 
 <div class="glass-panel" style="padding: 30px;">
@@ -175,8 +226,9 @@
                 <input type="text" name="name" placeholder="Ex: Bebidas Geladas" required>
             </div>
             <div style="flex: 1; min-width: 150px;">
-                <label>WhatsApp (DDD + Número)</label>
-                <input type="text" name="whatsapp_number" placeholder="5511999999999">
+                <label>WhatsApp</label>
+                <input type="text" name="whatsapp_number" placeholder="(11) 99999-9999" 
+                    oninput="maskPhone(this)" autocomplete="off">
             </div>
             <button type="submit" class="btn-neon"><i class="ph ph-floppy-disk"></i> Criar</button>
         </form>
@@ -214,7 +266,7 @@
                                 <i class="ph ph-whatsapp-logo" style="color: #25D366; font-size: 1.2em;"></i>
                                 <input type="text" name="whatsapp_number" value="{{ store.whatsapp_number or '' }}" 
                                     class="inline-edit" style="font-size: 1em; width: 100%; border: none;"
-                                    placeholder="55..." onchange="this.form.submit()">
+                                    placeholder="(11) 99999-9999" oninput="maskPhone(this)" onchange="this.form.submit()">
                             </div>
                         </div>
 
