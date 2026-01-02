@@ -310,13 +310,16 @@
 
     async function loadPresets() {
         try {
-            const res = await fetch('/admin/templates/list');
+            // Cache buster
+            const res = await fetch('/admin/templates/list?t=' + new Date().getTime());
             const data = await res.json();
             presetsData = data.presets || [];
             
+            // console.log("Presets loaded:", presetsData.length);
+            
             document.querySelectorAll('.preset-select').forEach(select => {
                 const currentVal = select.value;
-                select.innerHTML = '<option value="">-- Selecione --</option>';
+                select.innerHTML = '<option value="">-- Selecione (' + presetsData.length + ') --</option>';
                 
                 presetsData.forEach(p => {
                     const opt = document.createElement('option');
@@ -325,12 +328,12 @@
                     select.appendChild(opt);
                 });
                 
-                // Restore value if still valid
                 if(presetsData.find(p => p.id == currentVal)) select.value = currentVal;
             });
 
         } catch (e) {
             console.log(e);
+            // alert('Erro ao carregar modelos: ' + e.message); 
         }
     }
 
