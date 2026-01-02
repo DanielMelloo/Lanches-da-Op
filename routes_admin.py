@@ -83,13 +83,19 @@ def order_details(order_id):
 @admin_bp.route('/order/<int:order_id>/delete', methods=['POST'])
 def delete_order(order_id):
     order = Order.query.get_or_404(order_id)
+    
+    # Capture state BEFORE delete
+    subsite_id = order.subsite_id
+    subsite = order.subsite
+    tax_mode = subsite.tax_mode if subsite else None
+    
     db.session.delete(order)
     db.session.commit()
     
     # Recalculate taxes if variable mode
-    if order.subsite.tax_mode == 'variable':
+    if tax_mode == 'variable':
          from services.tax_service import recalculate_taxes
-         recalculate_taxes(order.subsite_id)
+         recalculate_taxes(subsite_id)
          
     flash('Pedido excluído.', 'success')
     return redirect(url_for('admin.orders'))
