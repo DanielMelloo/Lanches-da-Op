@@ -1,3 +1,8 @@
+import os
+# Fix for ZoneInfoNotFoundError in some environments (like AL2023)
+# Set TZ before imports that use it (like APScheduler)
+os.environ['TZ'] = 'America/Sao_Paulo'
+
 from flask import Flask, render_template, g, session, redirect, url_for
 from flask_login import LoginManager, current_user
 from dotenv import load_dotenv
