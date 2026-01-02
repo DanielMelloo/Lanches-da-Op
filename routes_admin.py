@@ -1043,50 +1043,68 @@ def get_store_status():
 # ============================================================
 
 @admin_bp.route('/templates/save', methods=['POST'])
+@login_required
 def template_save():
-    subsite_id = current_user.subsite_id
-    if current_user.role == 'admin_master':
-         subsite_id = session.get('master_subsite_id')
-    
-    if not subsite_id: return {'error': 'No subsite'}, 400
-
-    data = request.get_json()
-    name = data.get('name')
-    content = data.get('content')
-    
-    if not name or not content:
-        return {'error': 'Missing name or content'}, 400
+    try:
+        subsite_id = current_user.subsite_id
+        if current_user.role == 'admin_master':
+             subsite_id = session.get('master_subsite_id')
         
-    from models import WhatsappTemplatePreset
-    new_preset = WhatsappTemplatePreset(name=name, content=content, subsite_id=subsite_id)
-    db.session.add(new_preset)
-    db.session.commit()
+        if not subsite_id: return {'error': 'No subsite'}, 400
     
-    return {'success': True, 'id': new_preset.id}
+        data = request.get_json()
+        name = data.get('name')
+        content = data.get('content')
+        
+        if not name or not content:
+            return {'error': 'Missing name or content'}, 400
+            
+        from models import WhatsappTemplatePreset
+        new_preset = WhatsappTemplatePreset(name=name, content=content, subsite_id=subsite_id)
+        db.session.add(new_preset)
+        db.session.commit()
+        
+        return {'success': True, 'id': new_preset.id}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {'error': str(e)}, 500
 
 @admin_bp.route('/templates/list', methods=['GET'])
+@login_required
 def template_list():
-    subsite_id = current_user.subsite_id
-    if current_user.role == 'admin_master':
-         subsite_id = session.get('master_subsite_id')
-    
-    from models import WhatsappTemplatePreset
-    presets = WhatsappTemplatePreset.query.filter_by(subsite_id=subsite_id).all()
-    
-    return {'presets': [{'id': p.id, 'name': p.name, 'content': p.content} for p in presets]}
+    try:
+        subsite_id = current_user.subsite_id
+        if current_user.role == 'admin_master':
+             subsite_id = session.get('master_subsite_id')
+        
+        from models import WhatsappTemplatePreset
+        presets = WhatsappTemplatePreset.query.filter_by(subsite_id=subsite_id).all()
+        
+        return {'presets': [{'id': p.id, 'name': p.name, 'content': p.content} for p in presets]}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {'presets': []} # Return empty list on error to not break UI
 
 @admin_bp.route('/templates/<int:preset_id>', methods=['DELETE'])
+@login_required
 def template_delete(preset_id):
-    from models import WhatsappTemplatePreset
-    preset = WhatsappTemplatePreset.query.get_or_404(preset_id)
-    
-    # Permission check
-    user_subsite = current_user.subsite_id
-    if current_user.role == 'admin_master': user_subsite = session.get('master_subsite_id')
-    
-    if preset.subsite_id != user_subsite:
-        return {'error': 'Unauthorized'}, 403
+    try:
+        from models import WhatsappTemplatePreset
+        preset = WhatsappTemplatePreset.query.get_or_404(preset_id)
         
-    db.session.delete(preset)
-    db.session.commit()
-    return {'success': True}
+        # Permission check
+        user_subsite = current_user.subsite_id
+        if current_user.role == 'admin_master': user_subsite = session.get('master_subsite_id')
+        
+        if preset.subsite_id != user_subsite:
+            return {'error': 'Unauthorized'}, 403
+            
+        db.session.delete(preset)
+        db.session.commit()
+        return {'success': True}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {'error': str(e)}, 500
