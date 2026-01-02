@@ -57,12 +57,15 @@ def run_dispatcher():
         dispatches = {} # {whatsapp_number: {store_obj: {order_id: [items]}}}
         orders_to_mark = set()
 
+        import re
+        
         # Helper to process a store's pending orders
         def process_store_orders(store, specific_subsite_id=None, force_resend=False):
             if not store.whatsapp_number:
                 return
             
-            num = store.whatsapp_number.strip().replace('+', '').replace(' ', '').replace('-', '')
+            # Strict Sanitization
+            num = re.sub(r'\D', '', store.whatsapp_number)
             if not num: return
             if len(num) in [10, 11]: num = '55' + num
             
@@ -82,43 +85,8 @@ def run_dispatcher():
             if not pending_orders:
                 return
 
-            if num not in dispatches: dispatches[num] = {}
-            if store not in dispatches[num]: dispatches[num][store] = {}
-
             for order in pending_orders:
                 orders_to_mark.add(order)
-                if order.id not in dispatches[num][store]:
-                    dispatches[num][store][order.id] = []
-                
-                # Only items for THIS store in this order
-                relevant_items = [oi for oi in order.order_items if oi.item and oi.item.store_id == store.id]
-                print(f"[DEBUG] Order {order.id} total items: {len(order.order_items)}, relevant for store {store.id}: {len(relevant_items)}")
-
-                for oi in relevant_items:
-                    # Extract subitems
-                    subtext = ""
-                    if oi.subitems_json:
-                        parts = []
-                        for group in oi.subitems_json:
-                            opts = group.get('options', [])
-                            if opts:
-                                opt_names = []
-                                for o in opts:
-                                    if isinstance(o, dict): opt_names.append(f"{o.get('option')} x{o.get('qty', 1)}")
-                                    else: opt_names.append(str(o))
-                                parts.append(f"{group.get('title', group.get('group', ''))}: {', '.join(opt_names)}")
-                        subtext = " | ".join(parts)
-
-                    dispatches[num][store][order.id].append({
-                        'name': oi.item.name,
-                        'quantity': oi.quantity,
-                        'subitems': subtext,
-                        'price': oi.price_at_moment
-                    })
-
-        dispatches = {} # { phone_number: { store_obj: { order_id: [item_dicts] } } }
-        orders_to_mark = set()
-        price_map = {} # {order_id: total_price} - Not strictly needed as we recalc, but good for ref.
         
         processed_stores_in_cycle = set()
 
@@ -150,7 +118,7 @@ def run_dispatcher():
                  # It was processed as 'Closed' (only new orders). 
                  # We want 'Force' (all orders).
                  # So we clear the previous (partial) data for this store and re-run.
-                 num = s.whatsapp_number.strip().replace('+', '').replace(' ', '').replace('-', '') if s.whatsapp_number else None
+                 num = re.sub(r'\D', '', s.whatsapp_number) if s.whatsapp_number else None
                  if num and len(num) in [10, 11]: num = '55' + num
                  if num and num in dispatches and s in dispatches[num]:
                      del dispatches[num][s]
@@ -161,7 +129,7 @@ def run_dispatcher():
             s.pending_manual_dispatch = False
             
             # Check if this store generated any dispatch
-            num = s.whatsapp_number.strip().replace('+', '').replace(' ', '').replace('-', '') if s.whatsapp_number else None
+            num = re.sub(r'\D', '', s.whatsapp_number) if s.whatsapp_number else None
             if num and len(num) in [10, 11]: num = '55' + num
             
             if num and (num not in dispatches or s not in dispatches[num]):
