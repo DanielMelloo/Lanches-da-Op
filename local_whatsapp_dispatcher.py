@@ -195,105 +195,91 @@ def run_dispatcher():
                 page.wait_for_selector('div[contenteditable="true"]', timeout=300000)
 
             for num, stores_dict in dispatches.items():
-                # Merge Logic: Combine all stores sharing this number
-                all_orders = {} # {order_id: [items]}
-                target_template = None
-                target_store_name = None
-                
-                # Merge orders from all stores (Solving the "Duplicate Store" / "Split Order" issue)
-                for store, orders_in_store in stores_dict.items():
-                    if not orders_in_store: continue
-                    
-                    for oid, items in orders_in_store.items():
-                        if oid not in all_orders: all_orders[oid] = []
-                        all_orders[oid].extend(items) # Merge lists (e.g. items from Store 1 + items from Store 5)
-                    
-                    # Pick a template from one of the stores (prefer first non-empty)
-                    if not target_template and store.whatsapp_template and store.whatsapp_template.strip():
-                        target_template = store.whatsapp_template
-                        target_store_name = store.name
-                    if not target_store_name: target_store_name = store.name
+                for store, orders_data in stores_dict.items():
+                    operations = [] # List of (text, [order_ids])
 
-                if not all_orders: continue
-                
-                operations = [] # List of (text, [order_ids])
-
-                if target_template and target_template.strip():
-                    # Smart Template Parsing (Using the chosen template)
-                    tmpl_normalized = target_template.replace('\r\n', '\n')
-                    full_tmpl_lines = tmpl_normalized.split('\n')
-                    
-                    row_vars = ['{id_pedido}', '{cliente}', '{telefone}', '{endereco}', 
-                                '{pagamento}', '{data}', '{itens}', '{itens_inline}', 
-                                '{total}', '{observacao}']
-                    
-                    first_row_idx = -1
-                    last_row_idx = -1
-                    
-                    for i, line in enumerate(full_tmpl_lines):
-                        if any(v in line for v in row_vars):
-                            if first_row_idx == -1: first_row_idx = i
-                            last_row_idx = i
-                    
-                    if first_row_idx == -1:
-                        header_lines = []
-                        body_lines = full_tmpl_lines
-                        footer_lines = []
-                    else:
-                        header_lines = full_tmpl_lines[:first_row_idx]
-                        body_lines = full_tmpl_lines[first_row_idx : last_row_idx+1]
-                        footer_lines = full_tmpl_lines[last_row_idx+1:]
-
-                    header_txt = "\n".join(header_lines)
-                    body_tmpl = "\n".join(body_lines)
-                    footer_txt = "\n".join(footer_lines)
-
-                    # Global Vars Context
-                    now_hour = datetime.now().hour
-                    if 5 <= now_hour < 12: saudacao = "Bom dia"
-                    elif 12 <= now_hour < 18: saudacao = "Boa tarde"
-                    else: saudacao = "Boa noite"
-                    
-                    def replace_globals(txt):
-                        t = txt.replace('{loja}', target_store_name or "Loja")
-                        t = t.replace('{saudacao}', saudacao)
-                        return t
-
-                    final_header = replace_globals(header_txt)
-                    final_footer = replace_globals(footer_txt)
-
-                    # Process Body Loop on MERGED orders
-                    current_batch_text = []
-                    current_batch_ids = []
-                    
-                    sorted_orders = sorted(all_orders.items(), key=lambda x: x[0]) 
-                    
-                    for order_id, items in sorted_orders:
-                        # Need to find the Order Object to get attributes (Customer Name, Address, etc.)
-                        # We can look in orders_to_mark (which contains ALL involved orders)
-                        order_obj = next((o for o in orders_to_mark if o.id == order_id), None)
+                    if store.whatsapp_template and store.whatsapp_template.strip():
+                        # Smart Template Parsing
+                        tmpl_normalized = store.whatsapp_template.replace('\r\n', '\n')
+                        full_tmpl_lines = tmpl_normalized.split('\n')
                         
-                        # Only skip if absolutely not found (shouldn't happen)
-                        if not order_obj: 
-                             print(f"[WARN] Order {order_id} not found in objects list during join.")
-                             # Try fetching from DB if session is active?
-                             # Safety fallback:
-                             from models import Order
-                             order_obj = Order.query.get(order_id)
+                        row_vars = ['{id_pedido}', '{cliente}', '{telefone}', '{endereco}', 
+                                    '{pagamento}', '{data}', '{itens}', '{itens_inline}', 
+                                    '{total}', '{observacao}']
                         
-                        if not order_obj: continue
+                        first_row_idx = -1
+                        last_row_idx = -1
+                        
+                        for i, line in enumerate(full_tmpl_lines):
+                            if any(v in line for v in row_vars):
+                                if first_row_idx == -1: first_row_idx = i
+                                last_row_idx = i
+                        
+                        if first_row_idx == -1:
+                            header_lines = []
+                            body_lines = full_tmpl_lines
+                            footer_lines = []
+                        else:
+                            header_lines = full_tmpl_lines[:first_row_idx]
+                            body_lines = full_tmpl_lines[first_row_idx : last_row_idx+1]
+                            footer_lines = full_tmpl_lines[last_row_idx+1:]
 
-                        # Aggregate Items (Merged List)
-                        # Aggregate Items
-                        aggregated_items = {}
-                        total_val = 0.0
-                        for it in items:
-                            key = it['name']
-                            if it['subitems']: key += f" ({it['subitems']})"
-                            if key not in aggregated_items:
-                                aggregated_items[key] = {'qt': 0, 'price': float(it.get('price', 0))}
-                            aggregated_items[key]['qt'] += it['quantity']
-                            total_val += (float(it.get('price', 0)) * it['quantity'])
+                        header_txt = "\n".join(header_lines)
+                        body_tmpl = "\n".join(body_lines)
+                        footer_txt = "\n".join(footer_lines)
+
+                        # Calculate Batch Summary (Resumo Geral)
+                        batch_summary_items = {}
+                        for order_id_iter, items_iter in orders_data.items():
+                             # Check if order is valid (skip if not in fetch list? No, orders_data is source of truth)
+                             for it in items_iter:
+                                 key = it['name']
+                                 if it['subitems']: key += f" ({it['subitems']})"
+                                 
+                                 if key not in batch_summary_items:
+                                     batch_summary_items[key] = 0
+                                 batch_summary_items[key] += it['quantity']
+                        
+                        batch_summary_lines = []
+                        for key, qty in batch_summary_items.items():
+                            batch_summary_lines.append(f"{qty}x {key}")
+                        batch_summary_str = "\n".join(batch_summary_lines)
+
+                        # Global Vars Context
+                        now_hour = datetime.now().hour
+                        if 5 <= now_hour < 12: saudacao = "Bom dia"
+                        elif 12 <= now_hour < 18: saudacao = "Boa tarde"
+                        else: saudacao = "Boa noite"
+                        
+                        def replace_globals(txt):
+                            t = txt.replace('{loja}', store.name)
+                            t = t.replace('{saudacao}', saudacao)
+                            t = t.replace('{resumo_geral}', batch_summary_str)
+                            return t
+
+                        final_header = replace_globals(header_txt)
+                        final_footer = replace_globals(footer_txt)
+
+                        # Process Body Loop
+                        current_batch_text = []
+                        current_batch_ids = []
+                        
+                        sorted_orders = sorted(orders_data.items(), key=lambda x: x[0]) 
+                        
+                        for order_id, items in sorted_orders:
+                            order_obj = next((o for o in orders_to_mark if o.id == order_id), None)
+                            if not order_obj: continue
+
+                            # Aggregate Items
+                            aggregated_items = {}
+                            total_val = 0.0
+                            for it in items:
+                                key = it['name']
+                                if it['subitems']: key += f" ({it['subitems']})"
+                                if key not in aggregated_items:
+                                    aggregated_items[key] = {'qt': 0, 'price': float(it.get('price', 0))}
+                                aggregated_items[key]['qt'] += it['quantity']
+                                total_val += (float(it.get('price', 0)) * it['quantity'])
 
                             items_str = ""
                             items_inline_list = []
