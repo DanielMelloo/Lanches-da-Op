@@ -114,7 +114,53 @@
     .status-inactive {
         color: #666;
     }
+    .chip {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: var(--text-primary);
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.8em;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .chip:hover {
+        background: var(--accent-cyan);
+        color: #000;
+        border-color: var(--accent-cyan);
+    }
+    .template-editor {
+        width: 100%;
+        background: #111;
+        border: 1px solid #333;
+        color: #0f0; /* Terminal vibe or white? simple white is better for text */
+        color: #eee;
+        padding: 10px;
+        border-radius: 6px;
+        font-family: 'Consolas', monospace;
+        resize: vertical;
+    }
+    .template-editor:focus {
+        outline: none;
+        border-color: var(--accent-cyan);
+    }
 </style>
+<script>
+    function insertVar(btn, text) {
+        // Find the textarea in the same form
+        const form = btn.closest('form');
+        const textarea = form.querySelector('textarea');
+        
+        // Insert at cursor
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const value = textarea.value;
+        
+        textarea.value = value.substring(0, start) + text + value.substring(end);
+        textarea.selectionStart = textarea.selectionEnd = start + text.length;
+        textarea.focus();
+    }
+</script>
 
 <div class="glass-panel" style="padding: 30px;">
     <h2><i class="ph ph-storefront"></i> Gerenciar Lojas</h2>
@@ -165,6 +211,43 @@
                 </small>
             </div>
         </div>
++
++        <!-- Template Editor -->
++        <div style="width: 100%;">
++            <details style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 10px; border: 1px solid rgba(255,255,255,0.05);">
++                <summary style="cursor: pointer; color: var(--accent-cyan); font-weight: bold; font-size: 0.9em; user-select: none;">
++                    <i class="ph ph-chat-text-dots"></i> Configurar Mensagem WhatsApp
++                </summary>
++                
++                <form method="POST" style="margin-top: 15px;">
++                    <input type="hidden" name="store_id" value="{{ store.id }}">
++                    <input type="hidden" name="name" value="{{ store.name }}"> <!-- Keep name -->
++                    <input type="hidden" name="whatsapp_number" value="{{ store.whatsapp_number }}"> <!-- Keep number -->
++
++                    <div style="margin-bottom: 10px;">
++                        <label style="font-size: 0.8em; color: var(--text-muted);">Variáveis Disponíveis (Clique para inserir):</label>
++                        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 5px;">
++                            <button type="button" class="chip" onclick="insertVar(this, '{loja}')">{loja}</button>
++                            <button type="button" class="chip" onclick="insertVar(this, '{id_pedido}')">{id_pedido}</button>
++                            <button type="button" class="chip" onclick="insertVar(this, '{data}')">{data}</button>
++                            <button type="button" class="chip" onclick="insertVar(this, '{itens}')">{itens}</button>
++                            <button type="button" class="chip" onclick="insertVar(this, '{total}')">{total}</button>
++                            <button type="button" class="chip" onclick="insertVar(this, '{cliente}')">{cliente}</button>
++                        </div>
++                    </div>
++
++                    <textarea name="whatsapp_template" class="template-editor" rows="6" placeholder="Olá! Novo pedido chegando...&#10;Loja: {loja}..."
++                    >{{ store.whatsapp_template or '' }}</textarea>
++                    
++                    <div style="text-align: right; margin-top: 10px;">
++                        <button type="submit" class="btn-primary" style="padding: 5px 15px; font-size: 0.9em;">
++                            <i class="ph ph-floppy-disk"></i> Salvar Template
++                        </button>
++                    </div>
++                </form>
++            </details>
++        </div>
+
 
         <div style="display: flex; gap: 12px; align-items: center;">
             <!-- Manual Dispatch -->

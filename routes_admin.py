@@ -317,6 +317,12 @@ def stores():
                     # General update (name and/or whatsapp)
                     store.name = name
                     store.whatsapp_number = whatsapp_number
+                    
+                    # Update template if provided
+                    template = request.form.get('whatsapp_template')
+                    if template is not None:
+                        store.whatsapp_template = template
+                        
                     db.session.commit()
                     flash('Dados da loja atualizados.', 'success')
         else:
