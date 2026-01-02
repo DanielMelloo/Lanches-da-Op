@@ -1090,6 +1090,3 @@ def template_delete(preset_id):
     db.session.delete(preset)
     db.session.commit()
     return {'success': True}
-        'closing_time': subsite.order_closing_time,
-        'closing_time_active': subsite.closing_time_active
-    }
