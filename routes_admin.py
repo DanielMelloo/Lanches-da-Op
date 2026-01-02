@@ -300,6 +300,10 @@ def stores():
         name = request.form.get('name')
         whatsapp_number = request.form.get('whatsapp_number')
         
+        if whatsapp_number:
+            import re
+            whatsapp_number = re.sub(r'\D', '', whatsapp_number)
+            
         if store_id:
             store = Store.query.get(store_id)
             if store and store.subsite_id == subsite_id:
@@ -1031,6 +1035,61 @@ def get_store_status():
     return {
         'is_open': subsite.is_open(),
         'opening_time': subsite.order_opening_time,
+        'closing_time': subsite.order_closing_time
+    }
+
+# ============================================================
+# WHATSAPP TEMPLATE PRESETS
+# ============================================================
+
+@admin_bp.route('/templates/save', methods=['POST'])
+def template_save():
+    subsite_id = current_user.subsite_id
+    if current_user.role == 'admin_master':
+         subsite_id = session.get('master_subsite_id')
+    
+    if not subsite_id: return {'error': 'No subsite'}, 400
+
+    data = request.get_json()
+    name = data.get('name')
+    content = data.get('content')
+    
+    if not name or not content:
+        return {'error': 'Missing name or content'}, 400
+        
+    from models import WhatsappTemplatePreset
+    new_preset = WhatsappTemplatePreset(name=name, content=content, subsite_id=subsite_id)
+    db.session.add(new_preset)
+    db.session.commit()
+    
+    return {'success': True, 'id': new_preset.id}
+
+@admin_bp.route('/templates/list', methods=['GET'])
+def template_list():
+    subsite_id = current_user.subsite_id
+    if current_user.role == 'admin_master':
+         subsite_id = session.get('master_subsite_id')
+    
+    from models import WhatsappTemplatePreset
+    presets = WhatsappTemplatePreset.query.filter_by(subsite_id=subsite_id).all()
+    
+    return {'presets': [{'id': p.id, 'name': p.name, 'content': p.content} for p in presets]}
+
+@admin_bp.route('/templates/<int:preset_id>', methods=['DELETE'])
+def template_delete(preset_id):
+    from models import WhatsappTemplatePreset
+    preset = WhatsappTemplatePreset.query.get_or_404(preset_id)
+    
+    # Permission check
+    user_subsite = current_user.subsite_id
+    if current_user.role == 'admin_master': user_subsite = session.get('master_subsite_id')
+    
+    if preset.subsite_id != user_subsite:
+        return {'error': 'Unauthorized'}, 403
+        
+    db.session.delete(preset)
+    db.session.commit()
+    return {'success': True}
         'closing_time': subsite.order_closing_time,
         'closing_time_active': subsite.closing_time_active
     }

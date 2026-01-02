@@ -210,7 +210,92 @@
         document.querySelectorAll('input[name="whatsapp_number"]').forEach(input => {
              maskPhone(input);
         });
+        loadPresets();
     });
+
+    // ===========================
+    // Template Presets Logic
+    // ===========================
+    let presetsData = [];
+
+    async function loadPresets() {
+        try {
+            const res = await fetch('/admin/templates/list');
+            const data = await res.json();
+            presetsData = data.presets || [];
+            
+            const select = document.getElementById('templateSelect');
+            select.innerHTML = '<option value="">-- Selecione --</option>';
+            
+            presetsData.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = p.name;
+                select.appendChild(opt);
+            });
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    async function savePreset() {
+        const textarea = document.querySelector('textarea[name="whatsapp_template"]');
+        const content = textarea.value;
+        if(!content) return alert('Template vazio.');
+        
+        const name = prompt("Nome do Modelo (ex: Promoção Terça):");
+        if(!name) return;
+        
+        try {
+            const res = await fetch('/admin/templates/save', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name, content})
+            });
+            const data = await res.json();
+            if(data.success) {
+                alert('Modelo salvo!');
+                loadPresets();
+            } else {
+                alert('Erro: ' + data.error);
+            }
+        } catch(e) {
+            alert('Erro ao salvar.');
+        }
+    }
+
+    function loadPreset(id) {
+        if(!id) return;
+        const p = presetsData.find(x => x.id == id);
+        if(p) {
+            if(confirm('Substituir o texto atual pelo modelo "' + p.name + '"?')) {
+                const textarea = document.querySelector('textarea[name="whatsapp_template"]');
+                textarea.value = p.content;
+            } else {
+                document.getElementById('templateSelect').value = "";
+            }
+        }
+    }
+
+    async function deletePreset() {
+        const select = document.getElementById('templateSelect');
+        const id = select.value;
+        if(!id) return alert('Selecione um modelo para excluir.');
+        
+        if(!confirm('Excluir este modelo permanentemente?')) return;
+        
+        try {
+            const res = await fetch('/admin/templates/' + id, { method: 'DELETE' });
+            const data = await res.json();
+            if(data.success) {
+                loadPresets();
+            } else {
+                alert('Erro: ' + data.error);
+            }
+        } catch(e) {
+            alert('Erro ao excluir.');
+        }
+    }
 </script>
 
 <div class="glass-panel" style="padding: 30px;">
@@ -313,8 +398,25 @@
                         </div>
                     </div>
 
-                    <textarea name="whatsapp_template" class="template-editor" rows="6" placeholder="Olá! 🍔&#10;Pedido {id_pedido} confirmado!&#10;{itens}&#10;Total: {total}&#10;Pagamento: {pagamento}"
-                    >{{ store.whatsapp_template or '' }}</textarea>
+                        <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <label style="font-size: 0.9em; color: var(--text-muted);">Modelos Salvos:</label>
+                                <select id="templateSelect" class="input-field" style="padding: 5px; min-width: 150px;" onchange="loadPreset(this.value)">
+                                    <option value="">-- Selecione --</option>
+                                </select>
+                                <button type="button" class="icon-btn minimal" onclick="deletePreset()" title="Excluir Modelo" style="color: var(--danger);">
+                                    <i class="ph ph-trash"></i>
+                                </button>
+                            </div>
+                            
+                            <button type="button" class="btn-secondary" onclick="savePreset()" style="font-size: 0.8em; padding: 5px 15px;">
+                                <i class="ph ph-floppy-disk"></i> Salvar Modelo Atual
+                            </button>
+                        </div>
+
+                        <textarea name="whatsapp_template" class="input-field" rows="12" 
+                            style="width: 100%; font-family: monospace; line-height: 1.5; padding: 15px;"
+                            placeholder="Olá {cliente}...">{{ store.whatsapp_template }}</textarea>
                     
                     <div style="text-align: right; margin-top: 10px;">
                         <button type="submit" class="btn-primary" style="padding: 5px 15px; font-size: 0.9em;">

@@ -148,6 +148,13 @@ class Sector(db.Model):
     active = db.Column(db.Boolean, default=True)
     subsite_id = db.Column(db.Integer, db.ForeignKey('subsites.id'))
 
+class WhatsappTemplatePreset(db.Model):
+    __tablename__ = 'whatsapp_template_presets'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    subsite_id = db.Column(db.Integer, db.ForeignKey('subsites.id'), nullable=False)
+
 class Status(db.Model):
     __tablename__ = 'statuses'
     id = db.Column(db.Integer, primary_key=True)
