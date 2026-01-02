@@ -25,12 +25,12 @@ class ScraperManager:
         url = config.get('url', 'https://app.anota.ai/m/JLS7eh7xw')
         
         # Scrape
-        print(f"[{datetime.now()}] Starting Scrape for Store {store.name} ({mode})...")
+        current_app.logger.info(f"[{datetime.now()}] Starting Scrape for Store {store.name} ({mode})...")
         scraped_data = scrape_menu(url)
         items_data = scraped_data.get('items', [])
         
         if not items_data:
-            print("No items found.")
+            current_app.logger.info("No items found.")
             return {"status": "no_items", "count": 0}
             
         stats = {"updated": 0, "created": 0, "deactivated": 0, "reactivated": 0, "skipped": 0}
@@ -97,7 +97,7 @@ class ScraperManager:
                     # I will deactivate, but I'll add a name filter for "lanchinho" to skipping logic.
                     
                     if db_item.active:
-                        print(f"Deactivating {db_item.name} (not in scrape)")
+                        current_app.logger.info(f"Deactivating {db_item.name} (not in scrape)")
                         db_item.active = False
                         stats['deactivated'] += 1
 
@@ -139,7 +139,7 @@ class ScraperManager:
         store.scraper_config = config
         db.session.commit() # Save config update
         
-        print(f"Sync ({mode}) Complete: {stats}")
+        current_app.logger.info(f"Sync ({mode}) Complete: {stats}")
         return stats
 
     @staticmethod
@@ -156,7 +156,7 @@ class ScraperManager:
         
         scheduler = current_app.extensions.get('scheduler')
         if not scheduler:
-            print("Scheduler not initialized.")
+            current_app.logger.error("Scheduler not initialized.")
             return
             
         job_id = f"scraper_store_{store.id}"
@@ -190,7 +190,7 @@ class ScraperManager:
                     seconds=seconds,
                     replace_existing=True
                 )
-                print(f"Scheduled interval job {job_id} every {hours}h {minutes}m {seconds}s.")
+                current_app.logger.info(f"Scheduled interval job {job_id} every {hours}h {minutes}m {seconds}s.")
 
             elif schedule_type == 'fixed':
                 # Fixed schedule can be daily, weekly or monthly
@@ -206,7 +206,7 @@ class ScraperManager:
                         minute=minute,
                         replace_existing=True
                     )
-                    print(f"Scheduled daily job {job_id} at {time_str}.")
+                    current_app.logger.info(f"Scheduled daily job {job_id} at {time_str}.")
                 elif frequency == 'weekly':
                     # APScheduler cron uses day_of_week 0=mon ... 6=sun
                     day_of_week = config.get('weekly_day', 0)
@@ -219,7 +219,7 @@ class ScraperManager:
                         minute=minute,
                         replace_existing=True
                     )
-                    print(f"Scheduled weekly job {job_id} on day {day_of_week} at {time_str}.")
+                    current_app.logger.info(f"Scheduled weekly job {job_id} on day {day_of_week} at {time_str}.")
                 elif frequency == 'monthly':
                     day_of_month = config.get('monthly_day', 1)
                     scheduler.add_job(
@@ -231,7 +231,7 @@ class ScraperManager:
                         minute=minute,
                         replace_existing=True
                     )
-                    print(f"Scheduled monthly job {job_id} on day {day_of_month} at {time_str}.")
+                    current_app.logger.info(f"Scheduled monthly job {job_id} on day {day_of_month} at {time_str}.")
                 else:
                     # fallback to daily if unknown
                     scheduler.add_job(
@@ -242,4 +242,4 @@ class ScraperManager:
                         minute=minute,
                         replace_existing=True
                     )
-                    print(f"Scheduled fallback daily job {job_id} at {time_str}.")
+                    current_app.logger.info(f"Scheduled fallback daily job {job_id} at {time_str}.")
