@@ -994,6 +994,10 @@ def update_closing_schedule():
         subsite.closing_time_active = not subsite.closing_time_active
         flash(f'Fechamento automático {"ATIVADO" if subsite.closing_time_active else "DESATIVADO"}.', 'success')
         
+    elif action == 'toggle_auto_send':
+        subsite.auto_send_whatsapp = not getattr(subsite, 'auto_send_whatsapp', True)
+        flash(f'Envio automático de WhatsApp {"ATIVADO" if subsite.auto_send_whatsapp else "DESATIVADO"}.', 'success')
+        
     elif action == 'extend':
         minutes = int(request.form.get('minutes', 0))
         if minutes > 0:

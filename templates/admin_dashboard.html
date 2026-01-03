@@ -222,6 +222,14 @@
                         <i class="ph {{ 'ph-repeat' if subsite.closing_time_active else 'ph-repeat-off' }}"></i>
                         <span id="auto_status_label">Auto: {{ 'ON' if subsite.closing_time_active else 'OFF' }}</span>
                     </button>
+
+                    <button type="button" class="btn-secondary {{ 'btn-toggle-on' if subsite.auto_send_whatsapp else 'btn-toggle-off' }}" 
+                        onclick="document.getElementById('form_action_type').value='toggle_auto_send'; this.form.submit();"
+                        style="height: 38px; display: flex; align-items: center; gap: 8px; margin-left: 5px;"
+                        title="Ativar/Desativar envio automático WhatsApp">
+                        <i class="ph {{ 'ph-whatsapp-logo' if subsite.auto_send_whatsapp else 'ph-whatsapp-logo' }} {{ 'text-success' if subsite.auto_send_whatsapp }}"></i>
+                        <span>Wpp: {{ 'ON' if subsite.auto_send_whatsapp else 'OFF' }}</span>
+                    </button>
                 </form>
 
                 <!-- Extension Timer -->

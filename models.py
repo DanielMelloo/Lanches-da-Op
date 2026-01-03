@@ -33,6 +33,7 @@ class Subsite(db.Model):
     order_closing_time = db.Column(db.String(5), default='23:59') # HH:MM
     closing_time_active = db.Column(db.Boolean, default=False)
     temp_open_until = db.Column(db.DateTime) # Temporal extension
+    auto_send_whatsapp = db.Column(db.Boolean, default=True) # Global Auto-Dispatch toggle
     
     # Relationships
     users = db.relationship('User', backref='subsite', lazy=True)

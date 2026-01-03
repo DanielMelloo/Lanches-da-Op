@@ -14,11 +14,15 @@ def fix_all_db():
 
     user, password, host, db_name = match.groups()
     
+    # Force Tunnel Connection for Production Fix
+    host = '127.0.0.1'
+    port = 3307
+    
     # Force correct DB name based on previous experience (fix_db.py)
     # The URI often has 'lanches_da_op' but the real DB is 'lanches_db'
-    target_db = 'lanches_db' 
+    target_db = 'lanches_da_op' 
     
-    print(f"Connecting to {host} as {user} to update {target_db}...")
+    print(f"Connecting to {host}:{port} as {user} to update {target_db}...")
     
     try:
         conn = pymysql.connect(
@@ -26,6 +30,7 @@ def fix_all_db():
             user=user,
             password=password,
             database=target_db,
+            port=port,
             cursorclass=pymysql.cursors.DictCursor
         )
         
@@ -60,6 +65,14 @@ def fix_all_db():
             ensure_column('auto_send_on_close', 'BOOLEAN DEFAULT TRUE')
             ensure_column('pending_manual_dispatch', 'BOOLEAN DEFAULT FALSE')
             ensure_column('whatsapp_template', 'TEXT')
+
+            # 3. Check 'auto_send_whatsapp' on subsites
+            print("Checking 'subsites' columns...")
+            cursor.execute("SHOW COLUMNS FROM subsites LIKE 'auto_send_whatsapp'")
+            if not cursor.fetchone():
+                print("- Adding 'auto_send_whatsapp' to subsites...")
+                cursor.execute("ALTER TABLE subsites ADD COLUMN auto_send_whatsapp BOOLEAN DEFAULT TRUE")
+                cursor.execute("UPDATE subsites SET auto_send_whatsapp = TRUE")
 
             conn.commit()
             print("\nSUCCESS: Database verification and update complete.")
