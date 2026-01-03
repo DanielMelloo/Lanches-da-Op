@@ -1,0 +1,36 @@
+DB URI: mysql+pymysql://root:CodeEz4ever@127.0.0.1:3307/lanches_da_op
+--- Testing Dispatcher Query Logic ---
+Store: RC Espetaria (ID: 1)
+Subsite: G3 (ID: 11)
+
+--- Filter 1: Subsite 11 ---
+Count: 2
+ - Found Order ID: 17, Subsite: 11, Disp: True
+ - Found Order ID: 18, Subsite: 11, Disp: True
+
+--- Testing Boolean Filters ---
+1. == False
+Count: 0
+2. == 0
+Count: 0
+3. is_(False)
+Count: 0
+5. != 1
+Count: 0
+6. isnot(True)
+Count: 0
+
+--- Filter 2 Redux ---
+Count: 0
+Order 8 present? False
+
+--- Filter 3: + Store 1 (via Join) ---
+Count: 0
+
+--- Filter 3 SQL ---
+SELECT orders.id AS orders_id, orders.user_id AS orders_user_id, orders.subsite_id AS orders_subsite_id, orders.sector_id AS orders_sector_id, orders.status_id AS orders_status_id, orders.section AS orders_section, orders.total_items AS orders_total_items, orders.tax_fixed AS orders_tax_fixed, orders.service_fee AS orders_service_fee, orders.total_general AS orders_total_general, orders.payment_required AS orders_payment_required, orders.payment_status AS orders_payment_status, orders.pix_charge_id AS orders_pix_charge_id, orders.pix_code_copy_paste AS orders_pix_code_copy_paste, orders.whatsapp_dispatched AS orders_whatsapp_dispatched, orders.created_at AS orders_created_at 
+FROM orders INNER JOIN order_items ON orders.id = order_items.order_id INNER JOIN items ON items.id = order_items.item_id 
+WHERE orders.subsite_id = %(subsite_id_1)s AND orders.whatsapp_dispatched != %(whatsapp_dispatched_1)s AND items.store_id = %(store_id_1)s
+
+--- Filter 3 Execution ---
+Found 0 orders.

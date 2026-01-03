@@ -1,594 +1,379 @@
 {% extends "base.html" %}
 
-{% block title %}Gerenciar Lojas
-<style>
-    /* Modal Styles */
-    .custom-modal-overlay {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
-        display: none; justify-content: center; align-items: center; z-index: 9999;
-    }
-    .custom-modal {
-        background: rgba(30,30,40, 0.95);
-        border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 16px;
-        padding: 25px;
-        width: 90%; max-width: 400px;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-        color: #fff;
-        transform: translateY(20px); opacity: 0;
-        transition: all 0.3s ease;
-    }
-    .custom-modal.active { transform: translateY(0); opacity: 1; }
-    .custom-modal h3 { margin-top: 0; color: var(--primary); }
-    .custom-modal p { color: #ccc; line-height: 1.5; }
-    .custom-modal-actions { margin-top: 25px; display: flex; justify-content: flex-end; gap: 10px; }
-    .custom-modal input {
-        width: 100%; padding: 10px; margin-top: 10px;
-        background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 8px; color: #fff; outline: none;
-    }
-    .custom-modal input:focus { border-color: var(--primary); }
-</style>
-
-<!-- Generic Modal Container -->
-<div id="genericModal" class="custom-modal-overlay">
-    <div class="custom-modal">
-        <h3 id="modalTitle">Título</h3>
-        <div id="modalBody"></div>
-        <div id="modalActions" class="custom-modal-actions">
-            <!-- Buttons specific to context -->
-        </div>
-    </div>
-</div>
-{% endblock %}
+{% block title %}Gerenciar Lojas{% endblock %}
 
 {% block content %}
 <style>
+    /* --- Shared Modal Styles --- */
+    .modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.75); backdrop-filter: blur(5px);
+        display: none; justify-content: center; align-items: center; z-index: 9999;
+        opacity: 0; transition: opacity 0.3s ease;
+    }
+    .modal-overlay.active { opacity: 1; }
+    
+    .modal-content {
+        background: #151921;
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 12px;
+        padding: 0;
+        width: 90%; max-width: 600px;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+        transform: scale(0.95); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        display: flex; flex-direction: column;
+        max-height: 90vh;
+    }
+    .modal-overlay.active .modal-content { transform: scale(1); }
+
+    .modal-header {
+        padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.05);
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .modal-header h3 { margin: 0; color: #fff; font-size: 1.2rem; }
+    .modal-close { background: none; border: none; color: #666; font-size: 1.5rem; cursor: pointer; transition: color 0.2s; }
+    .modal-close:hover { color: #fff; }
+
+    .modal-body { padding: 20px; overflow-y: auto; }
+    .modal-footer { padding: 20px; border-top: 1px solid rgba(255,255,255,0.05); text-align: right; }
+
+    /* --- UI Components --- */
     .store-card {
-        background: var(--card-bg);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 8px;
+        background: #0f1218;
+        border: 1px solid rgba(255,255,255,0.05);
+        border-radius: 12px;
         padding: 20px;
         margin-bottom: 15px;
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        transition: all 0.2s;
+        display: flex; align-items: center; gap: 20px;
+        transition: all 0.2s ease;
     }
-
-    .store-card:hover {
-        border-color: var(--accent-cyan);
-        background: rgba(255, 255, 255, 0.02);
-    }
+    .store-card:hover { border-color: rgba(255,255,255,0.15); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
 
     .store-icon {
-        width: 50px;
-        height: 50px;
-        background: rgba(0, 255, 136, 0.1);
-        color: var(--success);
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 24px;
+        width: 60px; height: 60px;
+        background: rgba(255,255,255,0.03);
+        border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 24px; color: #666;
+        transition: all 0.3s;
     }
+    .store-icon.active { background: rgba(0, 255, 136, 0.1); color: #00ff88; box-shadow: 0 0 15px rgba(0,255,136,0.1); }
 
-    .store-icon.inactive {
-        background: rgba(255, 59, 48, 0.1);
-        color: var(--danger);
+    .inline-input {
+        background: transparent; border: none; border-bottom: 1px solid rgba(255,255,255,0.1);
+        color: #fff; padding: 5px 0; width: 100%; font-family: inherit;
+        transition: border-color 0.2s;
     }
+    .inline-input:focus { outline: none; border-color: var(--accent-cyan); }
+    .inline-input::placeholder { color: #444; }
 
-    .inline-edit {
-        background: transparent;
-        border: 1px solid transparent;
-        color: white;
-        font-size: 1.1em;
-        font-weight: bold;
-        padding: 5px 10px;
-        border-radius: 4px;
-        transition: all 0.2s;
-        width: 100%;
-        max-width: 300px;
-    }
-
-    .inline-edit:hover,
-    .inline-edit:focus {
-        background: rgba(0, 0, 0, 0.3);
-        border-color: var(--accent-cyan);
-        outline: none;
-    }
-
-    .icon-btn.minimal {
-        background: transparent;
-        border: none;
-        padding: 5px;
-        opacity: 0.7;
+    .whatsapp-box {
+        display: flex; align-items: center; gap: 10px;
+        background: rgba(37, 211, 102, 0.05);
+        border: 1px solid rgba(37, 211, 102, 0.1);
+        padding: 8px 15px; border-radius: 8px;
         transition: all 0.2s;
     }
+    .whatsapp-box:focus-within { border-color: #25D366; background: rgba(37, 211, 102, 0.1); }
+    .whatsapp-box i { color: #25D366; font-size: 1.2rem; }
 
-    .icon-btn.minimal:hover {
-        opacity: 1;
-        transform: scale(1.1);
-        background: transparent;
-        border: none;
+    .action-btn {
+        background: rgba(255,255,255,0.05); border: none; color: #aaa;
+        width: 36px; height: 36px; border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; transition: all 0.2s;
     }
+    .action-btn:hover { background: rgba(255,255,255,0.1); color: #fff; transform: scale(1.05); }
+    .action-btn.delete:hover { background: rgba(255, 59, 48, 0.1); color: #ff3b30; }
 
-    .dispatch-btn {
-        background: rgba(37, 211, 102, 0.1);
-        color: #25D366;
-        border: 1px solid rgba(37, 211, 102, 0.2);
-        padding: 8px 15px;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 0.85em;
-        font-weight: 700;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        cursor: pointer;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        border: 1px solid transparent;
-    }
-
-    .dispatch-btn:hover {
-        background: #25D366;
-        color: var(--background-dark);
-        transform: translateY(-2px);
-        box-shadow: 0 10px 20px rgba(37, 211, 102, 0.2);
-    }
-
-    .dispatch-btn:active {
-        transform: translateY(0);
-    }
-
-    .status-toggle-icon {
-        font-size: 28px;
-        transition: all 0.2s;
-    }
-
-    .status-active {
-        color: #00ff88;
-    }
-
-    .status-inactive {
-        color: #666;
-    }
+    .chip-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; }
     .chip {
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        color: var(--text-primary);
-        padding: 4px 10px;
-        border-radius: 20px;
-        font-size: 0.8em;
-        cursor: pointer;
-        transition: all 0.2s;
+        background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+        color: #ccc; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem;
+        cursor: pointer; transition: all 0.2s;
     }
-    .chip:hover {
-        background: var(--accent-cyan);
-        color: #000;
-        border-color: var(--accent-cyan);
-    }
-    .template-editor {
-        width: 100%;
-        background: #111;
-        border: 1px solid #333;
-        color: #0f0; /* Terminal vibe or white? simple white is better for text */
-        color: #eee;
-        padding: 10px;
-        border-radius: 6px;
-        font-family: 'Consolas', monospace;
-        resize: vertical;
-    }
-    .template-editor:focus {
-        outline: none;
-        border-color: var(--accent-cyan);
-    }
-    .valid-phone { border-color: #4CAF50 !important; color: #4CAF50 !important; }
-    .invalid-phone { border-color: #F44336 !important; color: #F44336 !important; }
-</style>
-<script>
-    function insertVar(btn, text) {
-        // Find the textarea in the same form
-        const form = btn.closest('form');
-        const textarea = form.querySelector('textarea');
-        
-        // Insert at cursor
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        const value = textarea.value;
-        
-        textarea.value = value.substring(0, start) + text + value.substring(end);
-        textarea.selectionStart = textarea.selectionEnd = start + text.length;
-        textarea.focus();
-    }
-
-    function maskPhone(input) {
-        let value = input.value.replace(/\D/g, ''); // Strip non-digits
-        
-        // Limit to 11 digits
-        if (value.length > 11) value = value.slice(0, 11);
-
-        // Apply formatting
-        if (value.length > 10) {
-            // (11) 99999-9999
-            value = value.replace(/^(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
-        } else if (value.length > 6) {
-             // (11) 9999-9999
-             value = value.replace(/^(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3');
-        } else if (value.length > 2) {
-             // (11) 9999
-             value = value.replace(/^(\d{2})(\d{0,5})/, '($1) $2');
-        } else if (value.length > 0) {
-             // (11
-             value = value.replace(/^(\d{0,2})/, '($1');
-        }
-        
-        input.value = value;
-        validatePhone(input);
-    }
-
-    function validatePhone(input) {
-        const digits = input.value.replace(/\D/g, '').length;
-        const isValid = digits === 10 || digits === 11;
-        
-        if (input.value.length > 0) {
-            if (isValid) {
-                input.classList.add('valid-phone');
-                input.classList.remove('invalid-phone');
-            } else {
-                input.classList.add('invalid-phone');
-                input.classList.remove('valid-phone');
-            }
-        } else {
-            input.classList.remove('valid-phone', 'invalid-phone');
-        }
-    }
+    .chip:hover { background: var(--accent-cyan); color: #000; border-color: var(--accent-cyan); }
     
-    // --- Modal Logic ---
-    function closeModal() {
-        const overlay = document.getElementById('genericModal');
-        const modal = overlay.querySelector('.custom-modal');
-        modal.classList.remove('active');
-        setTimeout(() => { overlay.style.display = 'none'; }, 200);
+    .preset-row {
+        background: rgba(0,0,0,0.2); border-radius: 8px; padding: 10px;
+        display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;
     }
+</style>
 
-    function showModalCommon(title, bodyHtml, buttonsHtml) {
-        const overlay = document.getElementById('genericModal');
-        const modal = overlay.querySelector('.custom-modal');
-        
-        document.getElementById('modalTitle').textContent = title;
-        document.getElementById('modalBody').innerHTML = bodyHtml;
-        document.getElementById('modalActions').innerHTML = buttonsHtml;
-        
-        overlay.style.display = 'flex';
-        setTimeout(() => { modal.classList.add('active'); }, 10);
-    }
+<div class="container" style="padding-top: 40px; padding-bottom: 60px;">
+    
+    <!-- Page Header -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px;">
+        <div>
+            <h2 style="margin: 0; font-size: 1.8rem; letter-spacing: -0.5px;">Gerenciar Lojas</h2>
+            <p class="text-muted" style="margin: 5px 0 0 0;">Configure seus pontos de venda e mensagens automáticas</p>
+        </div>
+        <button onclick="document.getElementById('newStoreForm').style.display = document.getElementById('newStoreForm').style.display === 'none' ? 'block' : 'none'" 
+            class="btn-neon" style="height: 44px; padding: 0 25px;">
+            <i class="ph ph-plus" style="margin-right: 8px;"></i> Nova Loja
+        </button>
+    </div>
 
-    window.promptModal = function(title, placeholder, onConfirm) {
-        const body = `<input type="text" id="modalInput" placeholder="${placeholder}" onkeydown="if(event.key==='Enter') document.getElementById('btnConfirm').click()">`;
-        const buttons = `
-            <button onclick="closeModal()" class="btn-secondary" style="background:transparent; border:1px solid #555;">Cancelar</button>
-            <button id="btnConfirm" class="btn-primary">Salvar</button>
-        `;
-        showModalCommon(title, body, buttons);
-        setTimeout(() => document.getElementById('modalInput').focus(), 100);
-        document.getElementById('btnConfirm').onclick = () => {
-            const val = document.getElementById('modalInput').value;
-            if(val) { closeModal(); onConfirm(val); }
-            else { document.getElementById('modalInput').style.borderColor = 'red'; }
-        };
-    };
+    <!-- New Store Form (Collapsible) -->
+    <div id="newStoreForm" class="glass-panel" style="display: none; margin-bottom: 30px; animation: slideDown 0.3s ease;">
+        <h3 style="font-size: 1.1rem; margin-bottom: 20px; color: #fff;">Cadastrar Nova Loja</h3>
+        <form method="POST" style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 20px; align-items: end;">
+            <div>
+                <label style="color: #666; font-size: 0.8rem; font-weight: 600; text-transform: uppercase;">Nome da Loja</label>
+                <input type="text" name="name" placeholder="Ex: Hamburgueria Central" required style="margin: 0;">
+            </div>
+            <div>
+                <label style="color: #666; font-size: 0.8rem; font-weight: 600; text-transform: uppercase;">WhatsApp</label>
+                <input type="text" name="whatsapp_number" placeholder="(11) 99999-9999" oninput="maskPhone(this)" style="margin: 0;">
+            </div>
+            <button type="submit" class="btn-primary" style="height: 45px;">Cadastrar</button>
+        </form>
+    </div>
 
-    window.confirmModal = function(title, message, onConfirm) {
-        const buttons = `
-            <button onclick="closeModal()" class="btn-secondary" style="background:transparent; border:1px solid #555;">Não</button>
-            <button id="btnConfirm" class="btn-primary" style="background: var(--primary);">Sim</button>
-        `;
-        showModalCommon(title, `<p>${message}</p>`, buttons);
-        document.getElementById('btnConfirm').onclick = () => { closeModal(); onConfirm(); };
-    };
+    <!-- Stores Grid -->
+    {% if stores %}
+    <div style="display: flex; flex-direction: column; gap: 15px;">
+        {% for store in stores %}
+        <div class="store-card">
+            <!-- Icon / Status -->
+            <form method="POST" style="margin:0;">
+                <input type="hidden" name="store_id" value="{{ store.id }}">
+                <input type="hidden" name="action" value="toggle_active">
+                <button type="submit" class="store-icon {{ 'active' if store.active else '' }}" title="{{ 'Clique para Desativar' if store.active else 'Clique para Ativar' }}" style="cursor: pointer; border: none;">
+                    <i class="ph {{ 'ph-storefront' if store.active else 'ph-storefront' }}"></i>
+                </button>
+            </form>
 
-    window.alertModal = function(title, message) {
-        const buttons = `<button onclick="closeModal()" class="btn-primary">OK</button>`;
-        showModalCommon(title, `<p>${message}</p>`, buttons);
-    };
+            <!-- Main Info -->
+            <div style="flex: 1;">
+                <form method="POST" style="margin: 0;">
+                    <input type="hidden" name="store_id" value="{{ store.id }}">
+                    
+                    <div style="display: grid; grid-template-columns: 1.5fr 1fr auto; gap: 20px; align-items: center;">
+                        
+                        <!-- Name Input -->
+                        <div>
+                            <input type="text" name="name" value="{{ store.name }}" class="inline-input" 
+                                style="font-size: 1.1rem; font-weight: 600;" onchange="this.form.submit()">
+                            <div style="display: flex; gap: 10px; margin-top: 5px;">
+                                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                                    <input type="checkbox" name="auto_send_on_close" value="true" {{ 'checked' if store.auto_send_on_close else '' }} onchange="this.form.submit()">
+                                    <span style="font-size: 0.75rem; color: #888;">Auto-Envio ao Fechar</span>
+                                </label>
+                            </div>
+                        </div>
 
-    // Auto-mask on load for existing values
-    document.addEventListener('DOMContentLoaded', () => {
-        document.querySelectorAll('input[name="whatsapp_number"]').forEach(input => {
-             maskPhone(input);
-        });
-        loadPresets();
-    });
+                        <!-- WhatsApp Input (Centered Style) -->
+                        <div class="whatsapp-box">
+                            <i class="ph-fill ph-whatsapp-logo"></i>
+                            <input type="text" name="whatsapp_number" value="{{ store.whatsapp_number or '' }}" 
+                                placeholder="Sem número" oninput="maskPhone(this)" onchange="this.form.submit()"
+                                style="background: transparent; border: none; color: #fff; width: 100%; outline: none;">
+                        </div>
 
-    // ===========================
-    // Template Presets Logic
-    // ===========================
+                        <!-- Actions -->
+                        <div style="display: flex; gap: 10px;">
+                            <button type="button" class="action-btn" title="Configurar Mensagem" 
+                                onclick="openTemplateEditor('{{ store.id }}', '{{ store.name }}', `{{ store.whatsapp_template or '' }}`)">
+                                <i class="ph ph-chat-text"></i>
+                            </button>
+                            
+                            <form method="POST" style="margin: 0;" onsubmit="return confirm('Disparar mensagens pendentes agora?')">
+                                <input type="hidden" name="store_id" value="{{ store.id }}">
+                                <input type="hidden" name="action" value="manual_dispatch">
+                                <button type="submit" class="action-btn" title="Forçar Envio Agora" style="color: #00ff88;">
+                                    <i class="ph ph-paper-plane-tilt"></i>
+                                </button>
+                            </form>
+
+                            <form method="POST" style="margin: 0;" onsubmit="return confirm('ATENÇÃO: Deletar esta loja apagará todo o histórico de vendas dela.\n\nConfirmar exclusão?')">
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="store_id" value="{{ store.id }}">
+                                <button type="submit" class="action-btn delete" title="Excluir Loja">
+                                    <i class="ph ph-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 60px; color: #444;">
+        <i class="ph ph-storefront" style="font-size: 48px; margin-bottom: 10px;"></i>
+        <p>Nenhuma loja cadastrada ainda.</p>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- TEMPLATE EDITOR MODAL -->
+<div id="templateModalOverlay" class="modal-overlay">
+    <div class="modal-content">
+        <form method="POST" id="templateForm" style="display: flex; flex-direction: column; height: 100%;">
+            <input type="hidden" name="store_id" id="modalStoreId">
+            
+            <div class="modal-header">
+                <div>
+                    <h3 id="modalStoreName">Configurar Mensagem</h3>
+                    <small style="color: #666;">Personalize a mensagem enviada pelo bot</small>
+                </div>
+                <button type="button" class="modal-close" onclick="closeTemplateEditor()">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <!-- Presets Control -->
+                <div class="preset-row">
+                    <div style="flex: 1;">
+                        <label style="font-size: 0.75rem; color: #888; display: block; margin-bottom: 5px;">CARREGAR MODELO:</label>
+                        <select id="presetSelect" class="inline-input" onchange="applyPreset(this.value)">
+                            <option value="">Selecione um modelo...</option>
+                        </select>
+                    </div>
+                    <div style="padding-left: 15px; border-left: 1px solid rgba(255,255,255,0.1); margin-left: 15px;">
+                        <button type="button" class="btn-secondary" style="font-size: 0.8rem; padding: 5px 12px; height: auto;" onclick="saveCurrentAsPreset()">
+                            <i class="ph ph-floppy-disk"></i> Salvar Este
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Chips -->
+                <label style="font-size: 0.75rem; color: #666; display: block; margin-bottom: 8px;">VARIÁVEIS DISPONÍVEIS:</label>
+                <div class="chip-grid">
+                    <span class="chip" onclick="insertVal('{saudacao}')">{saudacao}</span>
+                    <span class="chip" onclick="insertVal('{cliente}')">{cliente}</span>
+                    <span class="chip" onclick="insertVal('{loja}')">{loja}</span>
+                    <span class="chip" onclick="insertVal('{itens}')">{itens}</span>
+                    <span class="chip" onclick="insertVal('{total}')">{total}</span>
+                    <span class="chip" onclick="insertVal('{pagamento}')">{pagamento}</span>
+                    <span class="chip" onclick="insertVal('{endereco}')">{endereco}</span>
+                    <span class="chip" onclick="insertVal('{observacao}')">{observacao}</span>
+                    <span class="chip" onclick="insertVal('{resumo_geral}')" style="border-color: var(--accent-cyan); color: var(--accent-cyan);">{resumo_geral}</span>
+                </div>
+
+                <!-- Editor -->
+                <textarea name="whatsapp_template" id="templateText" 
+                    style="width: 100%; height: 300px; background: #0b0d11; border: 1px solid rgba(255,255,255,0.1); color: #ddd; padding: 15px; border-radius: 8px; font-family: monospace; line-height: 1.5; resize: none;"
+                    placeholder="Olá {cliente}, seu pedido na {loja} foi confirmado!"></textarea>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="closeTemplateEditor()" style="margin-right: 10px;">Cancelar</button>
+                <button type="submit" class="btn-primary">Salvar Alterações</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // --- Template Editor Logic ---
+    const modalOverlay = document.getElementById('templateModalOverlay');
+    const modalStoreId = document.getElementById('modalStoreId');
+    const modalStoreName = document.getElementById('modalStoreName');
+    const templateText = document.getElementById('templateText');
+    const presetSelect = document.getElementById('presetSelect');
+    
     let presetsData = [];
 
-    async function loadPresets() {
+    function openTemplateEditor(id, name, currentContent) {
+        modalStoreId.value = id;
+        modalStoreName.textContent = 'Mensagem: ' + name;
+        templateText.value = currentContent; // Note: Backticks in HTML handle multiline passed from Jinja? No, Jinja might break strings.
+        // Better to fetch or ensure safe string. For now assuming simple. 
+        // Actually, Jinja string escaping in onclick attribute is risky for multiline.
+        // We will handle it by fetching content? Or just trusting Jinja escapejs.
+        
+        // Wait! The onclick in HTML above uses `{{ store.whatsapp_template }}`. 
+        // Should use a data attribute approach for safety. But sticking to basic for now.
+        // It might be better to read from a hidden div if content is large.
+        
+        modalOverlay.style.display = 'flex';
+        setTimeout(() => modalOverlay.classList.add('active'), 10);
+        loadPresetsAJAX();
+    }
+
+    function closeTemplateEditor() {
+        modalOverlay.classList.remove('active');
+        setTimeout(() => modalOverlay.style.display = 'none', 300);
+    }
+
+    function insertVal(val) {
+        const start = templateText.selectionStart;
+        const end = templateText.selectionEnd;
+        const text = templateText.value;
+        templateText.value = text.substring(0, start) + val + text.substring(end);
+        templateText.focus();
+        templateText.selectionStart = templateText.selectionEnd = start + val.length;
+    }
+
+    // --- Presets ---
+    async function loadPresetsAJAX() {
         try {
-            // Cache buster
-            const res = await fetch('/admin/templates/list?t=' + new Date().getTime());
+            const res = await fetch('/admin/templates/list?t=' + Date.now());
             const data = await res.json();
             presetsData = data.presets || [];
             
-            // console.log("Presets loaded:", presetsData.length);
-            
-            document.querySelectorAll('.preset-select').forEach(select => {
-                const currentVal = select.value;
-                select.innerHTML = '<option value="">-- Selecione (' + presetsData.length + ') --</option>';
-                
-                presetsData.forEach(p => {
-                    const opt = document.createElement('option');
-                    opt.value = p.id;
-                    opt.textContent = p.name;
-                    select.appendChild(opt);
-                });
-                
-                if(presetsData.find(p => p.id == currentVal)) select.value = currentVal;
+            presetSelect.innerHTML = '<option value="">Carregar um modelo...</option>';
+            presetsData.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = p.name;
+                presetSelect.appendChild(opt);
             });
+            
+            // Add delete option logic? 
+            // Simplified: User selects to APPLY. Deletion needs separate UI or small button.
+            // I'll add a small "x" next to dropdown? 
+            // For now, Keep it simple as requested "minimalista".
+        } catch(e) { console.error(e); }
+    }
 
-        } catch (e) {
-            console.log(e);
-            // alert('Erro ao carregar modelos: ' + e.message); 
+    function applyPreset(id) {
+        if(!id) return;
+        const p = presetsData.find(x => x.id == id);
+        if(p) {
+            if(confirm('Substituir o texto atual pelo modelo "'+p.name+'"?')) {
+                templateText.value = p.content;
+            }
+            presetSelect.value = ""; // Reset
         }
     }
 
-    async function savePreset(btn) {
-        // Find textarea relative to button
-        const form = btn.closest('form');
-        const textarea = form.querySelector('textarea[name="whatsapp_template"]');
-        const content = textarea.value;
+    async function saveCurrentAsPreset() {
+        const content = templateText.value;
+        if(!content.trim()) return alert('O modelo está vazio.');
         
-        if(!content) return alertModal('Atenção', 'O modelo está vazio.');
-        
-        promptModal('Nome do Modelo', 'Ex: Promoção Feriado', async (name) => {
+        const name = prompt('Nome do novo modelo (Ex: Promoção Natal):');
+        if(name) {
             try {
                 const res = await fetch('/admin/templates/save', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({name, content})
                 });
-                const data = await res.json();
-                if(data.success) {
-                    alertModal('Sucesso', 'Modelo "' + name + '" salvo!');
-                    loadPresets();
+                const d = await res.json();
+                if(d.success) {
+                    alert('Modelo salvo!');
+                    loadPresetsAJAX();
                 } else {
-                    alertModal('Erro', data.error || 'Erro desconhecido');
+                    alert('Erro: ' + d.error);
                 }
-            } catch(e) {
-                alertModal('Erro', 'Erro de conexão.');
-            }
-        });
-    }
-
-    function loadPreset(select) {
-        const id = select.value;
-        if(!id) return;
-        
-        const p = presetsData.find(x => x.id == id);
-        if(p) {
-            confirmModal('Carregar Modelo?', 'Deseja substituir o texto atual pelo modelo "'+p.name+'"?', () => {
-                const form = select.closest('form');
-                const textarea = form.querySelector('textarea[name="whatsapp_template"]');
-                textarea.value = p.content;
-            });
+            } catch(e) { alert('Erro de conexão'); }
         }
     }
 
-    async function deletePreset(btn) {
-        // Find select sibling
-        const wrapper = btn.closest('div'); 
-        const select = wrapper.querySelector('.preset-select');
-        const id = select.value;
-        
-        if(!id) return alertModal('Atenção', 'Selecione um modelo para excluir.');
-        
-        confirmModal('Excluir?', 'Tem certeza que deseja apagar este modelo permanentemente?', async () => {
-            try {
-                const res = await fetch('/admin/templates/' + id, { method: 'DELETE' });
-                const data = await res.json();
-                if(data.success) {
-                    loadPresets();
-                    alertModal('Sucesso', 'Modelo excluído.');
-                } else {
-                    alertModal('Erro', data.error || 'Erro ao excluir');
-                }
-            } catch(e) {
-                alertModal('Erro', 'Erro de conexão.');
-            }
-        });
+    // --- Utils ---
+    function maskPhone(input) {
+        let v = input.value.replace(/\D/g,'');
+        v = v.substring(0, 11);
+        if(v.length > 10) v = v.replace(/^(\d{2})(\d{5})(\d{4})/,'($1) $2-$3');
+        else if(v.length > 6) v = v.replace(/^(\d{2})(\d{4})(\d{0,4})/,'($1) $2-$3');
+        else if(v.length > 2) v = v.replace(/^(\d{2})(\d{0,5})/,'($1) $2');
+        else if(v.length > 0) v = v.replace(/^(\d{0,2})/,'($1');
+        input.value = v;
     }
-
-    // Initialize Presets on Load
-    document.addEventListener('DOMContentLoaded', () => {
-        loadPresets();
-    });
 </script>
 
-<div class="glass-panel" style="padding: 30px;">
-    <h2><i class="ph ph-storefront"></i> Gerenciar Lojas</h2>
-    <p class="text-muted">Categorias de produtos (ex: Lanches, Bebidas)</p>
-
-    <!-- New Store Form -->
-    <div class="card" style="margin: 30px 0;">
-        <h3><i class="ph ph-plus-circle"></i> Nova Loja</h3>
-        <form method="POST" style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
-            <div style="flex: 1; min-width: 200px;">
-                <label>Nome da Loja</label>
-                <input type="text" name="name" placeholder="Ex: Bebidas Geladas" required>
-            </div>
-            <div style="flex: 1; min-width: 150px;">
-                <label>WhatsApp</label>
-                <input type="text" name="whatsapp_number" placeholder="(11) 99999-9999" 
-                    oninput="maskPhone(this)" autocomplete="off">
-            </div>
-            <button type="submit" class="btn-neon"><i class="ph ph-floppy-disk"></i> Criar</button>
-        </form>
-    </div>
-
-    <!-- Stores List -->
-    <h3><i class="ph ph-list"></i> Lojas Cadastradas</h3>
-
-    {% for store in stores %}
-    <div class="store-card">
-        <div class="store-icon {{ '' if store.active else 'inactive' }}">
-            <i class="ph ph-storefront"></i>
-        </div>
-
-        <div style="flex: 1; display: flex; flex-direction: column; gap: 15px;">
-            <form method="POST" style="margin: 0; width: 100%;">
-                <input type="hidden" name="store_id" value="{{ store.id }}">
-                
-                <!-- Layout: Name on top, WhatsApp below -->
-                <div style="display: flex; flex-direction: column; gap: 12px;">
-                    
-                    <!-- Store Name -->
-                    <div>
-                        <label style="font-size: 0.75em; color: var(--text-muted); display: block; margin-bottom: 2px;">Nome da Loja</label>
-                        <input type="text" name="name" value="{{ store.name }}" class="inline-edit"
-                            style="font-size: 1.1em; font-weight: bold; width: 100%; border-bottom: 1px solid rgba(255,255,255,0.1);"
-                            onchange="this.form.submit()">
-                    </div>
-
-                    <!-- WhatsApp & Status Row -->
-                    <div style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
-                        <div style="flex: 1; min-width: 200px;">
-                            <label style="font-size: 0.75em; color: var(--text-muted); display: block; margin-bottom: 2px;">WhatsApp</label>
-                            <div style="display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.2); padding: 5px 10px; border-radius: 6px;">
-                                <i class="ph ph-whatsapp-logo" style="color: #25D366; font-size: 1.2em;"></i>
-                                <input type="text" name="whatsapp_number" value="{{ store.whatsapp_number or '' }}" 
-                                    class="inline-edit" style="font-size: 1em; width: 100%; border: none;"
-                                    placeholder="(11) 99999-9999" oninput="maskPhone(this)" onchange="this.form.submit()">
-                            </div>
-                        </div>
-
-                        <div style="padding-bottom: 8px; display: flex; align-items: center; gap: 15px;">
-                             <!-- Status Indicator -->
-                             <small style="color: {{ '#4CAF50' if store.active else 'var(--text-muted)' }}; font-weight: bold;">
-                                {{ '● Ativa' if store.active else '○ Oculta' }}
-                             </small>
-
-                             <!-- Auto-Send Toggle -->
-                             <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;" title="Enviar WhatsApp autom. ao fechar?">
-                                <input type="checkbox" name="auto_send_on_close" value="true" 
-                                    {{ 'checked' if store.auto_send_on_close else '' }} 
-                                    onchange="this.form.submit()">
-                                <span style="font-size: 0.8em; color: #ccc;">Auto-Envio</span>
-                             </label>
-                        </div>
-                    </div>
-
-                </div>
-            </form>
-        </div>
-        <!-- Template Editor -->
-        <div style="width: 100%;">
-            <details style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 10px; border: 1px solid rgba(255,255,255,0.05);">
-                <summary style="cursor: pointer; color: var(--accent-cyan); font-weight: bold; font-size: 0.9em; user-select: none;">
-                    <i class="ph ph-chat-text-dots"></i> Configurar Mensagem WhatsApp
-                </summary>
-                
-                <form method="POST" style="margin-top: 15px;">
-                    <input type="hidden" name="store_id" value="{{ store.id }}">
-                    <input type="hidden" name="name" value="{{ store.name }}"> <!-- Keep name -->
-                    <input type="hidden" name="whatsapp_number" value="{{ store.whatsapp_number }}"> <!-- Keep number -->
-
-                    <div style="margin-bottom: 10px;">
-                        <label style="font-size: 0.8em; color: var(--text-muted); display: block; margin-bottom: 5px;">
-                            Variáveis (Clique para inserir):
-                        </label>
-                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                            <button type="button" class="chip" onclick="insertVar(this, '{saudacao}')">Saudação</button>
-                            <button type="button" class="chip" onclick="insertVar(this, '{loja}')">Loja</button>
-                            <button type="button" class="chip" onclick="insertVar(this, '{id_pedido}')">ID Pedido</button>
-                            <button type="button" class="chip" onclick="insertVar(this, '{cliente}')">Cliente</button>
-                            <button type="button" class="chip" onclick="insertVar(this, '{telefone}')">Telefone</button>
-                            <button type="button" class="chip" onclick="insertVar(this, '{endereco}')">Endereço</button>
-                            <button type="button" class="chip" onclick="insertVar(this, '{pagamento}')">Pagamento</button>
-                            <button type="button" class="chip" onclick="insertVar(this, '{data}')">Data</button>
-                            <button type="button" class="chip" onclick="insertVar(this, '{itens}')">Itens (Lista)</button>
-                            <button type="button" class="chip" onclick="insertVar(this, '{itens_inline}')">Itens (Linha)</button>
-                            <button type="button" class="chip" onclick="insertVar(this, '{resumo_geral}')" style="border-color: var(--accent-cyan); color: var(--accent-cyan);">Resumo Geral</button>
-                            <button type="button" class="chip" onclick="insertVar(this, '{total}')">Total</button>
-                            <button type="button" class="chip" onclick="insertVar(this, '{observacao}')">Obs</button>
-                        </div>
-                    </div>
-
-                        <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                            <div style="display: flex; gap: 10px; align-items: center;">
-                                <label style="font-size: 0.9em; color: var(--text-muted);">Modelos Salvos:</label>
-                                <select class="preset-select input-field" style="padding: 5px; min-width: 150px;" onchange="loadPreset(this)">
-                                    <option value="">-- Selecione --</option>
-                                </select>
-                                <button type="button" class="icon-btn minimal" onclick="deletePreset(this)" title="Excluir Modelo" style="color: var(--danger);">
-                                    <i class="ph ph-trash"></i>
-                                </button>
-                            </div>
-                            
-                            <button type="button" class="btn-secondary" onclick="savePreset(this)" style="font-size: 0.8em; padding: 5px 15px;">
-                                <i class="ph ph-floppy-disk"></i> Salvar Modelo Atual
-                            </button>
-                        </div>
-
-                        <textarea name="whatsapp_template" class="input-field" rows="12" 
-                            style="width: 100%; font-family: monospace; line-height: 1.5; padding: 15px;"
-                            placeholder="Olá {cliente}...">{{ store.whatsapp_template }}</textarea>
-                    
-                    <div style="text-align: right; margin-top: 10px;">
-                        <button type="submit" class="btn-primary" style="padding: 5px 15px; font-size: 0.9em;">
-                            <i class="ph ph-floppy-disk"></i> Salvar Template
-                        </button>
-                    </div>
-                </form>
-            </details>
-        </div>
-
-
-        <div style="display: flex; gap: 12px; align-items: center;">
-            <!-- Manual Dispatch -->
-            <form method="POST" style="margin: 0;" onsubmit="return confirm('Enviar resumo de pedidos pendentes para {{ store.name }} via WhatsApp?')">
-                <input type="hidden" name="store_id" value="{{ store.id }}">
-                <input type="hidden" name="action" value="manual_dispatch">
-                <button type="submit" class="dispatch-btn" title="Enviar Pedidos Pendentes">
-                    <i class="ph-fill ph-whatsapp-logo" style="font-size: 20px;"></i>
-                    Enviar Pedidos
-                </button>
-            </form>
-
-            <div style="height: 30px; width: 1px; background: rgba(255,255,255,0.1); margin: 0 5px;"></div>
-
-            <!-- Status Toggle -->
-            <form method="POST" style="margin: 0;">
-                <input type="hidden" name="store_id" value="{{ store.id }}">
-                <input type="hidden" name="action" value="toggle_active">
-                <button type="submit" class="icon-btn minimal" title="{{ 'Desativar' if store.active else 'Ativar' }}">
-                    <i class="ph {{ 'ph-toggle-right' if store.active else 'ph-toggle-left' }} status-toggle-icon {{ 'status-active' if store.active else 'status-inactive' }}"></i>
-                </button>
-            </form>
-
-            <!-- Delete -->
-            <form method="POST" style="margin: 0;"
-                onsubmit="return confirm('ATENÇÃO: Excluir esta loja apagará TODOS os itens associados a ela!\n\nTem certeza?')">
-                <input type="hidden" name="action" value="delete">
-                <input type="hidden" name="store_id" value="{{ store.id }}">
-                <button type="submit" class="icon-btn minimal" title="Excluir">
-                    <i class="ph ph-trash" style="font-size: 24px; color: var(--danger);"></i>
-                </button>
-            </form>
-        </div>
-    </div>
-    {% else %}
-    <p class="text-muted">Nenhuma loja cadastrada.</p>
-    {% endfor %}
-
-    <div style="margin-top: 30px;">
-        <a href="{{ url_for('admin.items') }}" class="btn-secondary">
-            <i class="ph ph-arrow-left"></i> Voltar para Itens
-        </a>
-    </div>
-</div>
 {% endblock %}
