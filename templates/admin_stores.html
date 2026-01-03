@@ -1,379 +1,682 @@
-{% extends "base.html" %}
-
-{% block title %}Gerenciar Lojas{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}Gerenciar Lojas{% endblock %} {%
+block content %}
 <style>
-    /* --- Shared Modal Styles --- */
-    .modal-overlay {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.75); backdrop-filter: blur(5px);
-        display: none; justify-content: center; align-items: center; z-index: 9999;
-        opacity: 0; transition: opacity 0.3s ease;
-    }
-    .modal-overlay.active { opacity: 1; }
-    
-    .modal-content {
-        background: #151921;
-        border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 12px;
-        padding: 0;
-        width: 90%; max-width: 600px;
-        box-shadow: 0 20px 50px rgba(0,0,0,0.6);
-        transform: scale(0.95); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-        display: flex; flex-direction: column;
-        max-height: 90vh;
-    }
-    .modal-overlay.active .modal-content { transform: scale(1); }
+  /* --- Shared Modal Styles --- */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(5px);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .modal-overlay.active {
+    opacity: 1;
+  }
 
-    .modal-header {
-        padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.05);
-        display: flex; justify-content: space-between; align-items: center;
-    }
-    .modal-header h3 { margin: 0; color: #fff; font-size: 1.2rem; }
-    .modal-close { background: none; border: none; color: #666; font-size: 1.5rem; cursor: pointer; transition: color 0.2s; }
-    .modal-close:hover { color: #fff; }
+  .modal-content {
+    background: #151921;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 0;
+    width: 90%;
+    max-width: 600px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+    transform: scale(0.95);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+  }
+  .modal-overlay.active .modal-content {
+    transform: scale(1);
+  }
 
-    .modal-body { padding: 20px; overflow-y: auto; }
-    .modal-footer { padding: 20px; border-top: 1px solid rgba(255,255,255,0.05); text-align: right; }
+  .modal-header {
+    padding: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .modal-header h3 {
+    margin: 0;
+    color: #fff;
+    font-size: 1.2rem;
+  }
+  .modal-close {
+    background: none;
+    border: none;
+    color: #666;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+  .modal-close:hover {
+    color: #fff;
+  }
 
-    /* --- UI Components --- */
-    .store-card {
-        background: #0f1218;
-        border: 1px solid rgba(255,255,255,0.05);
-        border-radius: 12px;
-        padding: 20px;
-        margin-bottom: 15px;
-        display: flex; align-items: center; gap: 20px;
-        transition: all 0.2s ease;
-    }
-    .store-card:hover { border-color: rgba(255,255,255,0.15); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+  .modal-body {
+    padding: 20px;
+    overflow-y: auto;
+  }
+  .modal-footer {
+    padding: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    text-align: right;
+  }
 
-    .store-icon {
-        width: 60px; height: 60px;
-        background: rgba(255,255,255,0.03);
-        border-radius: 12px;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 24px; color: #666;
-        transition: all 0.3s;
-    }
-    .store-icon.active { background: rgba(0, 255, 136, 0.1); color: #00ff88; box-shadow: 0 0 15px rgba(0,255,136,0.1); }
+  /* --- UI Components --- */
+  .store-card {
+    background: #0f1218;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    transition: all 0.2s ease;
+  }
+  .store-card:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  }
 
-    .inline-input {
-        background: transparent; border: none; border-bottom: 1px solid rgba(255,255,255,0.1);
-        color: #fff; padding: 5px 0; width: 100%; font-family: inherit;
-        transition: border-color 0.2s;
-    }
-    .inline-input:focus { outline: none; border-color: var(--accent-cyan); }
-    .inline-input::placeholder { color: #444; }
+  .store-icon {
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: #666;
+    transition: all 0.3s;
+  }
+  .store-icon.active {
+    background: rgba(0, 255, 136, 0.1);
+    color: #00ff88;
+    box-shadow: 0 0 15px rgba(0, 255, 136, 0.1);
+  }
 
-    .whatsapp-box {
-        display: flex; align-items: center; gap: 10px;
-        background: rgba(37, 211, 102, 0.05);
-        border: 1px solid rgba(37, 211, 102, 0.1);
-        padding: 8px 15px; border-radius: 8px;
-        transition: all 0.2s;
-    }
-    .whatsapp-box:focus-within { border-color: #25D366; background: rgba(37, 211, 102, 0.1); }
-    .whatsapp-box i { color: #25D366; font-size: 1.2rem; }
+  .inline-input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    padding: 5px 0;
+    width: 100%;
+    font-family: inherit;
+    transition: border-color 0.2s;
+  }
+  .inline-input:focus {
+    outline: none;
+    border-color: var(--accent-cyan);
+  }
+  .inline-input::placeholder {
+    color: #444;
+  }
 
-    .action-btn {
-        background: rgba(255,255,255,0.05); border: none; color: #aaa;
-        width: 36px; height: 36px; border-radius: 8px;
-        display: flex; align-items: center; justify-content: center;
-        cursor: pointer; transition: all 0.2s;
-    }
-    .action-btn:hover { background: rgba(255,255,255,0.1); color: #fff; transform: scale(1.05); }
-    .action-btn.delete:hover { background: rgba(255, 59, 48, 0.1); color: #ff3b30; }
+  .whatsapp-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(37, 211, 102, 0.05);
+    border: 1px solid rgba(37, 211, 102, 0.1);
+    padding: 8px 15px;
+    border-radius: 8px;
+    transition: all 0.2s;
+  }
+  .whatsapp-box:focus-within {
+    border-color: #25d366;
+    background: rgba(37, 211, 102, 0.1);
+  }
+  .whatsapp-box i {
+    color: #25d366;
+    font-size: 1.2rem;
+  }
 
-    .chip-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; }
-    .chip {
-        background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-        color: #ccc; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem;
-        cursor: pointer; transition: all 0.2s;
-    }
-    .chip:hover { background: var(--accent-cyan); color: #000; border-color: var(--accent-cyan); }
-    
-    .preset-row {
-        background: rgba(0,0,0,0.2); border-radius: 8px; padding: 10px;
-        display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;
-    }
+  .action-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: none;
+    color: #aaa;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .action-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    transform: scale(1.05);
+  }
+  .action-btn.delete:hover {
+    background: rgba(255, 59, 48, 0.1);
+    color: #ff3b30;
+  }
+
+  .chip-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 15px;
+  }
+  .chip {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #ccc;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .chip:hover {
+    background: var(--accent-cyan);
+    color: #000;
+    border-color: var(--accent-cyan);
+  }
+
+  .preset-row {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+  }
 </style>
 
-<div class="container" style="padding-top: 40px; padding-bottom: 60px;">
-    
-    <!-- Page Header -->
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px;">
-        <div>
-            <h2 style="margin: 0; font-size: 1.8rem; letter-spacing: -0.5px;">Gerenciar Lojas</h2>
-            <p class="text-muted" style="margin: 5px 0 0 0;">Configure seus pontos de venda e mensagens automáticas</p>
-        </div>
-        <button onclick="document.getElementById('newStoreForm').style.display = document.getElementById('newStoreForm').style.display === 'none' ? 'block' : 'none'" 
-            class="btn-neon" style="height: 44px; padding: 0 25px;">
-            <i class="ph ph-plus" style="margin-right: 8px;"></i> Nova Loja
+<div class="container" style="padding-top: 40px; padding-bottom: 60px">
+  <!-- Page Header -->
+  <div
+    style="
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 40px;
+    "
+  >
+    <div>
+      <h2 style="margin: 0; font-size: 1.8rem; letter-spacing: -0.5px">
+        Gerenciar Lojas
+      </h2>
+      <p class="text-muted" style="margin: 5px 0 0 0">
+        Configure seus pontos de venda e mensagens automáticas
+      </p>
+    </div>
+    <button
+      onclick="document.getElementById('newStoreForm').style.display = document.getElementById('newStoreForm').style.display === 'none' ? 'block' : 'none'"
+      class="btn-neon"
+      style="height: 44px; padding: 0 25px"
+    >
+      <i class="ph ph-plus" style="margin-right: 8px"></i> Nova Loja
+    </button>
+  </div>
+
+  <!-- New Store Form (Collapsible) -->
+  <div
+    id="newStoreForm"
+    class="glass-panel"
+    style="display: none; margin-bottom: 30px; animation: slideDown 0.3s ease"
+  >
+    <h3 style="font-size: 1.1rem; margin-bottom: 20px; color: #fff">
+      Cadastrar Nova Loja
+    </h3>
+    <form
+      method="POST"
+      style="
+        display: grid;
+        grid-template-columns: 1fr 1fr auto;
+        gap: 20px;
+        align-items: end;
+      "
+    >
+      <div>
+        <label
+          style="
+            color: #666;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+          "
+          >Nome da Loja</label
+        >
+        <input
+          type="text"
+          name="name"
+          placeholder="Ex: Hamburgueria Central"
+          required
+          style="margin: 0"
+        />
+      </div>
+      <div>
+        <label
+          style="
+            color: #666;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+          "
+          >WhatsApp</label
+        >
+        <input
+          type="text"
+          name="whatsapp_number"
+          placeholder="(11) 99999-9999"
+          oninput="maskPhone(this)"
+          style="margin: 0"
+        />
+      </div>
+      <button type="submit" class="btn-primary" style="height: 45px">
+        Cadastrar
+      </button>
+    </form>
+  </div>
+
+  <!-- Stores Grid -->
+  {% if stores %}
+  <div style="display: flex; flex-direction: column; gap: 15px">
+    {% for store in stores %}
+    <div class="store-card">
+      <!-- Icon / Status -->
+      <form method="POST" style="margin: 0">
+        <input type="hidden" name="store_id" value="{{ store.id }}" />
+        <input type="hidden" name="action" value="toggle_active" />
+        <button
+          type="submit"
+          class="store-icon {{ 'active' if store.active else '' }}"
+          title="{{ 'Clique para Desativar' if store.active else 'Clique para Ativar' }}"
+          style="cursor: pointer; border: none"
+        >
+          <i
+            class="ph {{ 'ph-storefront' if store.active else 'ph-storefront' }}"
+          ></i>
         </button>
-    </div>
+      </form>
 
-    <!-- New Store Form (Collapsible) -->
-    <div id="newStoreForm" class="glass-panel" style="display: none; margin-bottom: 30px; animation: slideDown 0.3s ease;">
-        <h3 style="font-size: 1.1rem; margin-bottom: 20px; color: #fff;">Cadastrar Nova Loja</h3>
-        <form method="POST" style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 20px; align-items: end;">
-            <div>
-                <label style="color: #666; font-size: 0.8rem; font-weight: 600; text-transform: uppercase;">Nome da Loja</label>
-                <input type="text" name="name" placeholder="Ex: Hamburgueria Central" required style="margin: 0;">
-            </div>
-            <div>
-                <label style="color: #666; font-size: 0.8rem; font-weight: 600; text-transform: uppercase;">WhatsApp</label>
-                <input type="text" name="whatsapp_number" placeholder="(11) 99999-9999" oninput="maskPhone(this)" style="margin: 0;">
-            </div>
-            <button type="submit" class="btn-primary" style="height: 45px;">Cadastrar</button>
-        </form>
-    </div>
+      <!-- Main Info -->
+      <div style="flex: 1">
+        <form method="POST" style="margin: 0">
+          <input type="hidden" name="store_id" value="{{ store.id }}" />
 
-    <!-- Stores Grid -->
-    {% if stores %}
-    <div style="display: flex; flex-direction: column; gap: 15px;">
-        {% for store in stores %}
-        <div class="store-card">
-            <!-- Icon / Status -->
-            <form method="POST" style="margin:0;">
-                <input type="hidden" name="store_id" value="{{ store.id }}">
-                <input type="hidden" name="action" value="toggle_active">
-                <button type="submit" class="store-icon {{ 'active' if store.active else '' }}" title="{{ 'Clique para Desativar' if store.active else 'Clique para Ativar' }}" style="cursor: pointer; border: none;">
-                    <i class="ph {{ 'ph-storefront' if store.active else 'ph-storefront' }}"></i>
+          <div
+            style="
+              display: grid;
+              grid-template-columns: 1.5fr 1fr auto;
+              gap: 20px;
+              align-items: center;
+            "
+          >
+            <!-- Name Input -->
+            <div>
+              <input
+                type="text"
+                name="name"
+                value="{{ store.name }}"
+                class="inline-input"
+                style="font-size: 1.1rem; font-weight: 600"
+                onchange="this.form.submit()"
+              />
+              <div style="display: flex; gap: 10px; margin-top: 5px">
+                <label
+                  style="
+                    display: flex;
+                    align-items: center;
+                    gap: 5px;
+                    cursor: pointer;
+                  "
+                >
+                  <input type="checkbox" name="auto_send_on_close" value="true"
+                  {{ 'checked' if store.auto_send_on_close else '' }}
+                  onchange="this.form.submit()">
+                  <span style="font-size: 0.75rem; color: #888"
+                    >Auto-Envio ao Fechar</span
+                  >
+                </label>
+              </div>
+            </div>
+
+            <!-- WhatsApp Input (Centered Style) -->
+            <div class="whatsapp-box">
+              <i class="ph-fill ph-whatsapp-logo"></i>
+              <input
+                type="text"
+                name="whatsapp_number"
+                value="{{ store.whatsapp_number or '' }}"
+                placeholder="Sem número"
+                oninput="maskPhone(this)"
+                onchange="this.form.submit()"
+                style="
+                  background: transparent;
+                  border: none;
+                  color: #fff;
+                  width: 100%;
+                  outline: none;
+                "
+              />
+            </div>
+
+            <!-- Actions -->
+            <div style="display: flex; gap: 10px">
+              <button
+                type="button"
+                class="action-btn"
+                title="Configurar Mensagem"
+                onclick="openTemplateEditor('{{ store.id }}', '{{ store.name }}', `{{ store.whatsapp_template or '' }}`)"
+              >
+                <i class="ph ph-chat-text"></i>
+              </button>
+
+              <form
+                method="POST"
+                style="margin: 0"
+                onsubmit="return confirm('Disparar mensagens pendentes agora?')"
+              >
+                <input type="hidden" name="store_id" value="{{ store.id }}" />
+                <input type="hidden" name="action" value="manual_dispatch" />
+                <button
+                  type="submit"
+                  class="action-btn"
+                  title="Forçar Envio Agora"
+                  style="color: #00ff88"
+                >
+                  <i class="ph ph-paper-plane-tilt"></i>
                 </button>
-            </form>
+              </form>
 
-            <!-- Main Info -->
-            <div style="flex: 1;">
-                <form method="POST" style="margin: 0;">
-                    <input type="hidden" name="store_id" value="{{ store.id }}">
-                    
-                    <div style="display: grid; grid-template-columns: 1.5fr 1fr auto; gap: 20px; align-items: center;">
-                        
-                        <!-- Name Input -->
-                        <div>
-                            <input type="text" name="name" value="{{ store.name }}" class="inline-input" 
-                                style="font-size: 1.1rem; font-weight: 600;" onchange="this.form.submit()">
-                            <div style="display: flex; gap: 10px; margin-top: 5px;">
-                                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
-                                    <input type="checkbox" name="auto_send_on_close" value="true" {{ 'checked' if store.auto_send_on_close else '' }} onchange="this.form.submit()">
-                                    <span style="font-size: 0.75rem; color: #888;">Auto-Envio ao Fechar</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <!-- WhatsApp Input (Centered Style) -->
-                        <div class="whatsapp-box">
-                            <i class="ph-fill ph-whatsapp-logo"></i>
-                            <input type="text" name="whatsapp_number" value="{{ store.whatsapp_number or '' }}" 
-                                placeholder="Sem número" oninput="maskPhone(this)" onchange="this.form.submit()"
-                                style="background: transparent; border: none; color: #fff; width: 100%; outline: none;">
-                        </div>
-
-                        <!-- Actions -->
-                        <div style="display: flex; gap: 10px;">
-                            <button type="button" class="action-btn" title="Configurar Mensagem" 
-                                onclick="openTemplateEditor('{{ store.id }}', '{{ store.name }}', `{{ store.whatsapp_template or '' }}`)">
-                                <i class="ph ph-chat-text"></i>
-                            </button>
-                            
-                            <form method="POST" style="margin: 0;" onsubmit="return confirm('Disparar mensagens pendentes agora?')">
-                                <input type="hidden" name="store_id" value="{{ store.id }}">
-                                <input type="hidden" name="action" value="manual_dispatch">
-                                <button type="submit" class="action-btn" title="Forçar Envio Agora" style="color: #00ff88;">
-                                    <i class="ph ph-paper-plane-tilt"></i>
-                                </button>
-                            </form>
-
-                            <form method="POST" style="margin: 0;" onsubmit="return confirm('ATENÇÃO: Deletar esta loja apagará todo o histórico de vendas dela.\n\nConfirmar exclusão?')">
-                                <input type="hidden" name="action" value="delete">
-                                <input type="hidden" name="store_id" value="{{ store.id }}">
-                                <button type="submit" class="action-btn delete" title="Excluir Loja">
-                                    <i class="ph ph-trash"></i>
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </form>
+              <form
+                method="POST"
+                style="margin: 0"
+                onsubmit="return confirm('ATENÇÃO: Deletar esta loja apagará todo o histórico de vendas dela.\n\nConfirmar exclusão?')"
+              >
+                <input type="hidden" name="action" value="delete" />
+                <input type="hidden" name="store_id" value="{{ store.id }}" />
+                <button
+                  type="submit"
+                  class="action-btn delete"
+                  title="Excluir Loja"
+                >
+                  <i class="ph ph-trash"></i>
+                </button>
+              </form>
             </div>
-        </div>
-        {% endfor %}
+          </div>
+        </form>
+      </div>
     </div>
-    {% else %}
-    <div style="text-align: center; padding: 60px; color: #444;">
-        <i class="ph ph-storefront" style="font-size: 48px; margin-bottom: 10px;"></i>
-        <p>Nenhuma loja cadastrada ainda.</p>
-    </div>
-    {% endif %}
-
+    {% endfor %}
+  </div>
+  {% else %}
+  <div style="text-align: center; padding: 60px; color: #444">
+    <i
+      class="ph ph-storefront"
+      style="font-size: 48px; margin-bottom: 10px"
+    ></i>
+    <p>Nenhuma loja cadastrada ainda.</p>
+  </div>
+  {% endif %}
 </div>
 
 <!-- TEMPLATE EDITOR MODAL -->
 <div id="templateModalOverlay" class="modal-overlay">
-    <div class="modal-content">
-        <form method="POST" id="templateForm" style="display: flex; flex-direction: column; height: 100%;">
-            <input type="hidden" name="store_id" id="modalStoreId">
-            
-            <div class="modal-header">
-                <div>
-                    <h3 id="modalStoreName">Configurar Mensagem</h3>
-                    <small style="color: #666;">Personalize a mensagem enviada pelo bot</small>
-                </div>
-                <button type="button" class="modal-close" onclick="closeTemplateEditor()">&times;</button>
-            </div>
+  <div class="modal-content">
+    <form
+      method="POST"
+      id="templateForm"
+      style="display: flex; flex-direction: column; height: 100%"
+    >
+      <input type="hidden" name="store_id" id="modalStoreId" />
 
-            <div class="modal-body">
-                <!-- Presets Control -->
-                <div class="preset-row">
-                    <div style="flex: 1;">
-                        <label style="font-size: 0.75rem; color: #888; display: block; margin-bottom: 5px;">CARREGAR MODELO:</label>
-                        <select id="presetSelect" class="inline-input" onchange="applyPreset(this.value)">
-                            <option value="">Selecione um modelo...</option>
-                        </select>
-                    </div>
-                    <div style="padding-left: 15px; border-left: 1px solid rgba(255,255,255,0.1); margin-left: 15px;">
-                        <button type="button" class="btn-secondary" style="font-size: 0.8rem; padding: 5px 12px; height: auto;" onclick="saveCurrentAsPreset()">
-                            <i class="ph ph-floppy-disk"></i> Salvar Este
-                        </button>
-                    </div>
-                </div>
+      <div class="modal-header">
+        <div>
+          <h3 id="modalStoreName">Configurar Mensagem</h3>
+          <small style="color: #666"
+            >Personalize a mensagem enviada pelo bot</small
+          >
+        </div>
+        <button
+          type="button"
+          class="modal-close"
+          onclick="closeTemplateEditor()"
+        >
+          &times;
+        </button>
+      </div>
 
-                <!-- Chips -->
-                <label style="font-size: 0.75rem; color: #666; display: block; margin-bottom: 8px;">VARIÁVEIS DISPONÍVEIS:</label>
-                <div class="chip-grid">
-                    <span class="chip" onclick="insertVal('{saudacao}')">{saudacao}</span>
-                    <span class="chip" onclick="insertVal('{cliente}')">{cliente}</span>
-                    <span class="chip" onclick="insertVal('{loja}')">{loja}</span>
-                    <span class="chip" onclick="insertVal('{itens}')">{itens}</span>
-                    <span class="chip" onclick="insertVal('{total}')">{total}</span>
-                    <span class="chip" onclick="insertVal('{pagamento}')">{pagamento}</span>
-                    <span class="chip" onclick="insertVal('{endereco}')">{endereco}</span>
-                    <span class="chip" onclick="insertVal('{observacao}')">{observacao}</span>
-                    <span class="chip" onclick="insertVal('{resumo_geral}')" style="border-color: var(--accent-cyan); color: var(--accent-cyan);">{resumo_geral}</span>
-                </div>
+      <div class="modal-body">
+        <!-- Presets Control -->
+        <div class="preset-row">
+          <div style="flex: 1">
+            <label
+              style="
+                font-size: 0.75rem;
+                color: #888;
+                display: block;
+                margin-bottom: 5px;
+              "
+              >CARREGAR MODELO:</label
+            >
+            <select
+              id="presetSelect"
+              class="inline-input"
+              onchange="applyPreset(this.value)"
+            >
+              <option value="">Selecione um modelo...</option>
+            </select>
+          </div>
+          <div
+            style="
+              padding-left: 15px;
+              border-left: 1px solid rgba(255, 255, 255, 0.1);
+              margin-left: 15px;
+            "
+          >
+            <button
+              type="button"
+              class="btn-secondary"
+              style="font-size: 0.8rem; padding: 5px 12px; height: auto"
+              onclick="saveCurrentAsPreset()"
+            >
+              <i class="ph ph-floppy-disk"></i> Salvar Este
+            </button>
+          </div>
+        </div>
 
-                <!-- Editor -->
-                <textarea name="whatsapp_template" id="templateText" 
-                    style="width: 100%; height: 300px; background: #0b0d11; border: 1px solid rgba(255,255,255,0.1); color: #ddd; padding: 15px; border-radius: 8px; font-family: monospace; line-height: 1.5; resize: none;"
-                    placeholder="Olá {cliente}, seu pedido na {loja} foi confirmado!"></textarea>
-            </div>
+        <!-- Chips -->
+        <label
+          style="
+            font-size: 0.75rem;
+            color: #666;
+            display: block;
+            margin-bottom: 8px;
+          "
+          >VARIÁVEIS DISPONÍVEIS:</label
+        >
+        <div class="chip-grid">
+          <span class="chip" onclick="insertVal('{saudacao}')">{saudacao}</span>
+          <span class="chip" onclick="insertVal('{cliente}')">{cliente}</span>
+          <span class="chip" onclick="insertVal('{loja}')">{loja}</span>
+          <span class="chip" onclick="insertVal('{itens}')">{itens}</span>
+          <span class="chip" onclick="insertVal('{total}')">{total}</span>
+          <span class="chip" onclick="insertVal('{pagamento}')"
+            >{pagamento}</span
+          >
+          <span class="chip" onclick="insertVal('{endereco}')">{endereco}</span>
+          <span class="chip" onclick="insertVal('{observacao}')"
+            >{observacao}</span
+          >
+          <span
+            class="chip"
+            onclick="insertVal('{resumo_geral}')"
+            style="border-color: var(--accent-cyan); color: var(--accent-cyan)"
+            >{resumo_geral}</span
+          >
+        </div>
 
-            <div class="modal-footer">
-                <button type="button" class="btn-secondary" onclick="closeTemplateEditor()" style="margin-right: 10px;">Cancelar</button>
-                <button type="submit" class="btn-primary">Salvar Alterações</button>
-            </div>
-        </form>
-    </div>
+        <!-- Editor -->
+        <textarea
+          name="whatsapp_template"
+          id="templateText"
+          style="
+            width: 100%;
+            height: 300px;
+            background: #0b0d11;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ddd;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            line-height: 1.5;
+            resize: none;
+          "
+          placeholder="Olá {cliente}, seu pedido na {loja} foi confirmado!"
+        ></textarea>
+      </div>
+
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn-secondary"
+          onclick="closeTemplateEditor()"
+          style="margin-right: 10px"
+        >
+          Cancelar
+        </button>
+        <button type="submit" class="btn-primary">Salvar Alterações</button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <script>
-    // --- Template Editor Logic ---
-    const modalOverlay = document.getElementById('templateModalOverlay');
-    const modalStoreId = document.getElementById('modalStoreId');
-    const modalStoreName = document.getElementById('modalStoreName');
-    const templateText = document.getElementById('templateText');
-    const presetSelect = document.getElementById('presetSelect');
-    
-    let presetsData = [];
+  // --- Template Editor Logic ---
+  const modalOverlay = document.getElementById("templateModalOverlay");
+  const modalStoreId = document.getElementById("modalStoreId");
+  const modalStoreName = document.getElementById("modalStoreName");
+  const templateText = document.getElementById("templateText");
+  const presetSelect = document.getElementById("presetSelect");
 
-    function openTemplateEditor(id, name, currentContent) {
-        modalStoreId.value = id;
-        modalStoreName.textContent = 'Mensagem: ' + name;
-        templateText.value = currentContent; // Note: Backticks in HTML handle multiline passed from Jinja? No, Jinja might break strings.
-        // Better to fetch or ensure safe string. For now assuming simple. 
-        // Actually, Jinja string escaping in onclick attribute is risky for multiline.
-        // We will handle it by fetching content? Or just trusting Jinja escapejs.
-        
-        // Wait! The onclick in HTML above uses `{{ store.whatsapp_template }}`. 
-        // Should use a data attribute approach for safety. But sticking to basic for now.
-        // It might be better to read from a hidden div if content is large.
-        
-        modalOverlay.style.display = 'flex';
-        setTimeout(() => modalOverlay.classList.add('active'), 10);
-        loadPresetsAJAX();
+  let presetsData = [];
+
+  function openTemplateEditor(id, name, currentContent) {
+    modalStoreId.value = id;
+    modalStoreName.textContent = "Mensagem: " + name;
+    templateText.value = currentContent; // Note: Backticks in HTML handle multiline passed from Jinja? No, Jinja might break strings.
+    // Better to fetch or ensure safe string. For now assuming simple.
+    // Actually, Jinja string escaping in onclick attribute is risky for multiline.
+    // We will handle it by fetching content? Or just trusting Jinja escapejs.
+
+    // Should use a data attribute approach for safety. But sticking to basic for now.
+    // It might be better to read from a hidden div if content is large.
+
+    modalOverlay.style.display = "flex";
+    setTimeout(() => modalOverlay.classList.add("active"), 10);
+    loadPresetsAJAX();
+  }
+
+  function closeTemplateEditor() {
+    modalOverlay.classList.remove("active");
+    setTimeout(() => (modalOverlay.style.display = "none"), 300);
+  }
+
+  function insertVal(val) {
+    const start = templateText.selectionStart;
+    const end = templateText.selectionEnd;
+    const text = templateText.value;
+    templateText.value = text.substring(0, start) + val + text.substring(end);
+    templateText.focus();
+    templateText.selectionStart = templateText.selectionEnd =
+      start + val.length;
+  }
+
+  // --- Presets ---
+  async function loadPresetsAJAX() {
+    try {
+      const res = await fetch("/admin/templates/list?t=" + Date.now());
+      const data = await res.json();
+      presetsData = data.presets || [];
+
+      presetSelect.innerHTML =
+        '<option value="">Carregar um modelo...</option>';
+      presetsData.forEach((p) => {
+        const opt = document.createElement("option");
+        opt.value = p.id;
+        opt.textContent = p.name;
+        presetSelect.appendChild(opt);
+      });
+
+      // Add delete option logic?
+      // Simplified: User selects to APPLY. Deletion needs separate UI or small button.
+      // I'll add a small "x" next to dropdown?
+      // For now, Keep it simple as requested "minimalista".
+    } catch (e) {
+      console.error(e);
     }
+  }
 
-    function closeTemplateEditor() {
-        modalOverlay.classList.remove('active');
-        setTimeout(() => modalOverlay.style.display = 'none', 300);
+  function applyPreset(id) {
+    if (!id) return;
+    const p = presetsData.find((x) => x.id == id);
+    if (p) {
+      if (confirm('Substituir o texto atual pelo modelo "' + p.name + '"?')) {
+        templateText.value = p.content;
+      }
+      presetSelect.value = ""; // Reset
     }
+  }
 
-    function insertVal(val) {
-        const start = templateText.selectionStart;
-        const end = templateText.selectionEnd;
-        const text = templateText.value;
-        templateText.value = text.substring(0, start) + val + text.substring(end);
-        templateText.focus();
-        templateText.selectionStart = templateText.selectionEnd = start + val.length;
-    }
+  async function saveCurrentAsPreset() {
+    const content = templateText.value;
+    if (!content.trim()) return alert("O modelo está vazio.");
 
-    // --- Presets ---
-    async function loadPresetsAJAX() {
-        try {
-            const res = await fetch('/admin/templates/list?t=' + Date.now());
-            const data = await res.json();
-            presetsData = data.presets || [];
-            
-            presetSelect.innerHTML = '<option value="">Carregar um modelo...</option>';
-            presetsData.forEach(p => {
-                const opt = document.createElement('option');
-                opt.value = p.id;
-                opt.textContent = p.name;
-                presetSelect.appendChild(opt);
-            });
-            
-            // Add delete option logic? 
-            // Simplified: User selects to APPLY. Deletion needs separate UI or small button.
-            // I'll add a small "x" next to dropdown? 
-            // For now, Keep it simple as requested "minimalista".
-        } catch(e) { console.error(e); }
-    }
-
-    function applyPreset(id) {
-        if(!id) return;
-        const p = presetsData.find(x => x.id == id);
-        if(p) {
-            if(confirm('Substituir o texto atual pelo modelo "'+p.name+'"?')) {
-                templateText.value = p.content;
-            }
-            presetSelect.value = ""; // Reset
+    const name = prompt("Nome do novo modelo (Ex: Promoção Natal):");
+    if (name) {
+      try {
+        const res = await fetch("/admin/templates/save", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, content }),
+        });
+        const d = await res.json();
+        if (d.success) {
+          alert("Modelo salvo!");
+          loadPresetsAJAX();
+        } else {
+          alert("Erro: " + d.error);
         }
+      } catch (e) {
+        alert("Erro de conexão");
+      }
     }
+  }
 
-    async function saveCurrentAsPreset() {
-        const content = templateText.value;
-        if(!content.trim()) return alert('O modelo está vazio.');
-        
-        const name = prompt('Nome do novo modelo (Ex: Promoção Natal):');
-        if(name) {
-            try {
-                const res = await fetch('/admin/templates/save', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({name, content})
-                });
-                const d = await res.json();
-                if(d.success) {
-                    alert('Modelo salvo!');
-                    loadPresetsAJAX();
-                } else {
-                    alert('Erro: ' + d.error);
-                }
-            } catch(e) { alert('Erro de conexão'); }
-        }
-    }
-
-    // --- Utils ---
-    function maskPhone(input) {
-        let v = input.value.replace(/\D/g,'');
-        v = v.substring(0, 11);
-        if(v.length > 10) v = v.replace(/^(\d{2})(\d{5})(\d{4})/,'($1) $2-$3');
-        else if(v.length > 6) v = v.replace(/^(\d{2})(\d{4})(\d{0,4})/,'($1) $2-$3');
-        else if(v.length > 2) v = v.replace(/^(\d{2})(\d{0,5})/,'($1) $2');
-        else if(v.length > 0) v = v.replace(/^(\d{0,2})/,'($1');
-        input.value = v;
-    }
+  // --- Utils ---
+  function maskPhone(input) {
+    let v = input.value.replace(/\D/g, "");
+    v = v.substring(0, 11);
+    if (v.length > 10) v = v.replace(/^(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
+    else if (v.length > 6)
+      v = v.replace(/^(\d{2})(\d{4})(\d{0,4})/, "($1) $2-$3");
+    else if (v.length > 2) v = v.replace(/^(\d{2})(\d{0,5})/, "($1) $2");
+    else if (v.length > 0) v = v.replace(/^(\d{0,2})/, "($1");
+    input.value = v;
+  }
 </script>
 
 {% endblock %}

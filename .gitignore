@@ -16,3 +16,9 @@ venv/
 
 whatsapp_session
 
+
+# Security
+certs/
+*.pem
+*.key
+*.p12
