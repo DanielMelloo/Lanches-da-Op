@@ -10,7 +10,6 @@ build/
 *.spec
 .env
 .vscode/
-aux/
 
 venv/
 
