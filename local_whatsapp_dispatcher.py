@@ -79,8 +79,8 @@ def run_dispatcher():
                 query = query.filter(db.func.date(Order.created_at) == today)
                 print(f"[DEBUG] Force resend for {store.name} on date {today}")
 
-            if specific_subsite_id:
-                query = query.filter(Order.subsite_id == specific_subsite_id)
+            # if specific_subsite_id:
+            #     query = query.filter(Order.subsite_id == specific_subsite_id)
             
             pending_orders = query.all()
             print(f"[DEBUG] Store {store.name}: Found {len(pending_orders)} orders (Force={force_resend})")
