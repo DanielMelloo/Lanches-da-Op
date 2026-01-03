@@ -243,6 +243,7 @@ block content %}
   input:checked + .slider {
     background-color: var(--accent-cyan);
     border-color: var(--accent-cyan);
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.4); /* Glow effect */
   }
   input:focus + .slider {
     box-shadow: 0 0 1px var(--accent-cyan);
@@ -257,6 +258,29 @@ block content %}
   select.inline-input option {
     background-color: #151921;
     color: #fff;
+  }
+  
+  /* Modal Button Styling */
+  .btn-primary-modal {
+      background: var(--accent-cyan);
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+  }
+  .btn-primary-modal:hover {
+      filter: brightness(1.1);
+      box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+  }
+
+  /* Store Card Hover */
+  .store-card:hover {
+    border-color: rgba(0, 255, 136, 0.5); /* Brighter border */
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
   }
 </style>
 
@@ -406,6 +430,7 @@ block content %}
                 value="{{ store.whatsapp_number or '' }}"
                 placeholder="Sem número"
                 oninput="maskPhone(this)"
+                onkeypress="if(event.key === 'Enter') saveStore('{{ store.id }}')"
                 style="
                   background: transparent;
                   border: none;
@@ -539,6 +564,8 @@ block content %}
               padding-left: 15px;
               border-left: 1px solid rgba(255, 255, 255, 0.1);
               margin-left: 15px;
+              display: flex;
+              gap: 5px;
             "
           >
             <button
@@ -546,8 +573,18 @@ block content %}
               class="btn-secondary"
               style="font-size: 0.8rem; padding: 5px 12px; height: auto"
               onclick="saveCurrentAsPreset()"
+              title="Salvar como novo modelo"
             >
-              <i class="ph ph-floppy-disk"></i> Salvar Este
+              <i class="ph ph-floppy-disk"></i>
+            </button>
+            <button
+              type="button"
+              class="btn-secondary"
+              style="font-size: 0.8rem; padding: 5px 12px; height: auto; color: #ff3b30; border-color: rgba(255, 59, 48, 0.3);"
+              onclick="deleteCurrentPreset()"
+              title="Excluir modelo selecionado"
+            >
+              <i class="ph ph-trash"></i>
             </button>
           </div>
         </div>
@@ -612,7 +649,7 @@ block content %}
         >
           Cancelar
         </button>
-        <button type="submit" class="btn-primary">Salvar Alterações</button>
+        <button type="submit" class="btn-primary-modal">Salvar Alterações</button>
       </div>
     </form>
   </div>
@@ -718,6 +755,28 @@ block content %}
         alert("Erro de conexão");
       }
     }
+  }
+
+  async function deleteCurrentPreset() {
+      const id = presetSelect.value;
+      if (!id) return alert("Selecione um modelo para excluir.");
+      
+      if (!confirm("Tem certeza que deseja excluir este modelo?")) return;
+      
+      try {
+          const res = await fetch("/admin/templates/" + id, {
+              method: "DELETE"
+          });
+          const d = await res.json();
+          if (d.success) {
+              alert("Modelo excluído.");
+              loadPresetsAJAX();
+          } else {
+              alert("Erro: " + d.error);
+          }
+      } catch (e) {
+          alert("Erro de conexão");
+      }
   }
 
   function saveStore(id) {
