@@ -370,9 +370,7 @@ block content %}
 
       <!-- Main Info -->
       <div style="flex: 1">
-        <form method="POST" style="margin: 0">
-          <input type="hidden" name="store_id" value="{{ store.id }}" />
-
+      <div style="flex: 1">
           <div
             style="
               display: grid;
@@ -385,17 +383,15 @@ block content %}
             <div>
               <input
                 type="text"
-                name="name"
+                id="name_{{ store.id }}"
                 value="{{ store.name }}"
                 class="inline-input"
                 style="font-size: 1.1rem; font-weight: 600"
-                onchange="this.form.submit()"
               />
               <div style="display: flex; gap: 10px; margin-top: 5px; align-items: center;">
                 <label class="switch">
-                  <input type="checkbox" name="auto_send_on_close" value="true"
-                  {{ 'checked' if store.auto_send_on_close else '' }}
-                  onchange="this.form.submit()">
+                  <input type="checkbox" id="auto_{{ store.id }}" value="true"
+                  {{ 'checked' if store.auto_send_on_close else '' }}>
                   <span class="slider round"></span>
                 </label>
                 <span style="font-size: 0.75rem; color: #aaa; letter-spacing: 0.5px;">AUTO-ENVIO</span>
@@ -407,11 +403,10 @@ block content %}
               <i class="ph-fill ph-whatsapp-logo"></i>
               <input
                 type="text"
-                name="whatsapp_number"
+                id="whatsapp_{{ store.id }}"
                 value="{{ store.whatsapp_number or '' }}"
                 placeholder="Sem número"
                 oninput="maskPhone(this)"
-                onchange="this.form.submit()"
                 style="
                   background: transparent;
                   border: none;
@@ -424,6 +419,17 @@ block content %}
 
             <!-- Actions -->
             <div style="display: flex; gap: 10px">
+              <!-- Save Button -->
+              <button
+                type="button"
+                class="action-btn"
+                title="Salvar Alterações"
+                onclick="saveStore('{{ store.id }}')"
+                style="color: var(--accent-cyan); border-color: rgba(0,255,136,0.3);"
+              >
+                <i class="ph ph-floppy-disk"></i>
+              </button>
+
               <button
                 type="button"
                 class="action-btn"
@@ -467,7 +473,6 @@ block content %}
               </form>
             </div>
           </div>
-        </form>
       </div>
     </div>
     {% endfor %}
@@ -714,6 +719,32 @@ block content %}
         alert("Erro de conexão");
       }
     }
+  }
+
+  function saveStore(id) {
+      const name = document.getElementById('name_' + id).value;
+      const whatsapp = document.getElementById('whatsapp_' + id).value;
+      const autoVar = document.getElementById('auto_' + id).checked;
+      
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.style.display = 'none';
+      
+      const f_id = document.createElement('input'); f_id.name = 'store_id'; f_id.value = id;
+      const f_name = document.createElement('input'); f_name.name = 'name'; f_name.value = name;
+      const f_what = document.createElement('input'); f_what.name = 'whatsapp_number'; f_what.value = whatsapp;
+      
+      form.appendChild(f_id);
+      form.appendChild(f_name);
+      form.appendChild(f_what);
+      
+      if (autoVar) {
+          const f_auto = document.createElement('input'); f_auto.name = 'auto_send_on_close'; f_auto.value = 'true';
+          form.appendChild(f_auto);
+      }
+      
+      document.body.appendChild(form);
+      form.submit();
   }
 
   // --- Utils ---
