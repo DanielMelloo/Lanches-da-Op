@@ -1,5 +1,7 @@
-from app import app, db
+from app import create_app, db
 from sqlalchemy import text
+
+app = create_app()
 
 def check_and_add_column(table, column, col_type):
     try:
