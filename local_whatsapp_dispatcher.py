@@ -385,7 +385,7 @@ def run_dispatcher():
                                 # Optional: Backup click if Enter didn't work (wait 2s to see if sent)
                                 # Check if text is still there? 
                                 # Simpler: Just wait a bit.
-                                time.sleep(2)
+                                time.sleep(3) # Increased sleep to ensure delivery
                             except:
                                 pass
 

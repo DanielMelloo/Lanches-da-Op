@@ -197,8 +197,66 @@ block content %}
     padding: 10px;
     display: flex;
     justify-content: space-between;
+    display: flex;
+    justify-content: space-between;
     align-items: center;
     margin-bottom: 15px;
+  }
+
+  /* --- Toggle Switch --- */
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 34px;
+    height: 20px;
+  }
+  .switch input { 
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #333;
+    -webkit-transition: .4s;
+    transition: .4s;
+    border-radius: 34px;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 12px;
+    width: 12px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    -webkit-transition: .4s;
+    transition: .4s;
+    border-radius: 50%;
+  }
+  input:checked + .slider {
+    background-color: var(--accent-cyan);
+    border-color: var(--accent-cyan);
+  }
+  input:focus + .slider {
+    box-shadow: 0 0 1px var(--accent-cyan);
+  }
+  input:checked + .slider:before {
+    -webkit-transform: translateX(14px);
+    -ms-transform: translateX(14px);
+    transform: translateX(14px);
+  }
+
+  /* High Contrast Select */
+  select.inline-input option {
+    background-color: #151921;
+    color: #fff;
   }
 </style>
 
@@ -333,22 +391,14 @@ block content %}
                 style="font-size: 1.1rem; font-weight: 600"
                 onchange="this.form.submit()"
               />
-              <div style="display: flex; gap: 10px; margin-top: 5px">
-                <label
-                  style="
-                    display: flex;
-                    align-items: center;
-                    gap: 5px;
-                    cursor: pointer;
-                  "
-                >
+              <div style="display: flex; gap: 10px; margin-top: 5px; align-items: center;">
+                <label class="switch">
                   <input type="checkbox" name="auto_send_on_close" value="true"
                   {{ 'checked' if store.auto_send_on_close else '' }}
                   onchange="this.form.submit()">
-                  <span style="font-size: 0.75rem; color: #888"
-                    >Auto-Envio ao Fechar</span
-                  >
+                  <span class="slider round"></span>
                 </label>
+                <span style="font-size: 0.75rem; color: #aaa; letter-spacing: 0.5px;">AUTO-ENVIO</span>
               </div>
             </div>
 
@@ -669,14 +719,33 @@ block content %}
   // --- Utils ---
   function maskPhone(input) {
     let v = input.value.replace(/\D/g, "");
-    v = v.substring(0, 11);
+    if (v.length > 11) v = v.substring(0, 11);
+    
     if (v.length > 10) v = v.replace(/^(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
-    else if (v.length > 6)
-      v = v.replace(/^(\d{2})(\d{4})(\d{0,4})/, "($1) $2-$3");
+    else if (v.length > 6) v = v.replace(/^(\d{2})(\d{4})(\d{0,4})/, "($1) $2-$3");
     else if (v.length > 2) v = v.replace(/^(\d{2})(\d{0,5})/, "($1) $2");
     else if (v.length > 0) v = v.replace(/^(\d{0,2})/, "($1");
+    
     input.value = v;
+    
+    // Simple verification visual cue
+    if (v.length >= 14) { // (11) 91234-5678 is 15 chars, (11) 1234-5678 is 14
+        input.style.borderColor = "#25d366";
+    } else {
+        input.style.borderColor = "rgba(255,255,255,0.1)";
+    }
   }
+
+  // Validate on Submit for New Store
+  document.querySelector('#newStoreForm form').onsubmit = function(e) {
+      const ph = this.querySelector('input[name="whatsapp_number"]');
+      const clean = ph.value.replace(/\D/g,'');
+      if (clean.length > 0 && clean.length < 10) {
+          alert("Número de WhatsApp inválido (min. 10 dígitos com DDD)");
+          e.preventDefault();
+          return false;
+      }
+  };
 </script>
 
 {% endblock %}
