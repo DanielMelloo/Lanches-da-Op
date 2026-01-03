@@ -125,7 +125,7 @@ class Store(db.Model):
     whatsapp_template = db.Column(db.Text) # Custom template per store
     
     # Flags
-    active = db.Column(db.Boolean, default=True)
+    # active is already defined above
     auto_send_on_close = db.Column(db.Boolean, default=True) # Control auto-dispatch
     pending_manual_dispatch = db.Column(db.Boolean, default=False)
     

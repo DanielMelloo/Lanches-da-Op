@@ -1,7 +1,0 @@
-Already up to date.
-Traceback (most recent call last):
-  File "/home/ec2-user/Lanches-da-Op/update_production_schema.py", line 1, in <module>
-    from app import app, db
-ImportError: cannot import name 'app' from 'app' (/home/ec2-user/Lanches-da-Op/app.py)
-Deploying to Production...
-Error: Command '['ssh', '-i', 'C:\\Users\\Daniel\\.ssh\\Keyzinha.pem', '-o', 'StrictHostKeyChecking=no', 'ec2-user@danielmello.store', 'cd Lanches-da-Op && git pull && source venv/bin/activate && python update_production_schema.py && sudo systemctl restart lanches-da-op']' returned non-zero exit status 1.
