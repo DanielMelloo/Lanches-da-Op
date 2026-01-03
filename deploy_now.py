@@ -9,7 +9,7 @@ def deploy():
         "-i", key_path,
         "-o", "StrictHostKeyChecking=no",
         "ec2-user@danielmello.store",
-        "cd Lanches-da-Op && git pull && sudo systemctl restart lanches-da-op"
+        "cd Lanches-da-Op && git pull && source venv/bin/activate && python update_production_schema.py && sudo systemctl restart lanches-da-op"
     ]
     
     print("Deploying to Production...")

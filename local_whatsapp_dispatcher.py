@@ -82,6 +82,10 @@ def run_dispatcher():
             # if specific_subsite_id:
             #     query = query.filter(Order.subsite_id == specific_subsite_id)
             
+            # DEBUG: Print exact SQL and params
+            print(f"[DEBUG-SQL] StoreID: {store.id}")
+            # print(str(query.statement.compile(compile_kwargs={"literal_binds": True})))
+            
             pending_orders = query.all()
             print(f"[DEBUG] Store {store.name}: Found {len(pending_orders)} orders (Force={force_resend})")
             
