@@ -18,43 +18,40 @@ def seed():
             db.session.commit()
             print("Created Subsite G1")
         
-        # Sectors
-        if not Sector.query.filter_by(name='Recepção', subsite_id=g1.id).first():
-            db.session.add(Sector(name='Recepção', subsite_id=g1.id))
-            db.session.add(Sector(name='Ala A', subsite_id=g1.id))
-            db.session.commit()
-            print("Created Sectors for G1")
-
-        # Stores
+        # Store
         store1 = Store.query.filter_by(name='Lanchonete Central', subsite_id=g1.id).first()
         if not store1:
             store1 = Store(name='Lanchonete Central', subsite_id=g1.id, active=True)
             db.session.add(store1)
             db.session.commit()
             print("Created Store Lanchonete Central")
+            
+        # Sector
+        if not Sector.query.filter_by(name='Recepção', subsite_id=g1.id).first():
+            db.session.add(Sector(name='Recepção', subsite_id=g1.id))
+            db.session.add(Sector(name='Ala A', subsite_id=g1.id))
+            db.session.commit()
+            print("Created Sectors")
 
         # Items
-        if not Item.query.filter_by(name='X-Salada', subsite_id=g1.id).first():
+        if not Item.query.filter_by(name='X-Salada', store_id=store1.id).first():
             item1 = Item(
                 name='X-Salada',
-                description='Pão, carne, queijo, alface, tomate e maionese.',
+                description='Pão, carne, queijo, salada',
                 price=15.00,
-                available=True,
-                store_id=store1.id,
-                subsite_id=g1.id,
-                subitems_template={'Opcionais': ['Bacon (+2.00)', 'Ovo (+1.00)'], 'Molhos': ['Barbecue', 'Maionese Verde']}
+                active=True,
+                store_id=store1.id
             )
             item2 = Item(
                 name='Coca-Cola Lata',
                 description='350ml Gelada',
                 price=5.00,
-                available=True,
-                store_id=store1.id,
-                subsite_id=g1.id
+                active=True,
+                store_id=store1.id
             )
             db.session.add_all([item1, item2])
             db.session.commit()
-            print("Created Items X-Salada and Coca-Cola")
+            print("Created Items")
 
         # Statuses
         if not Status.query.filter_by(name='Pendente').first():
