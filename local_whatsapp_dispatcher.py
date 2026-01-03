@@ -96,7 +96,6 @@ def run_dispatcher():
                 orders_to_mark.add(order)
                 
                 # Construct items list for the current order
-                # Construct items list for the current order
                 items_for_order = []
                 # Only items for THIS store
                 relevant_items = [oi for oi in order.order_items if oi.item and oi.item.store_id == store.id]
