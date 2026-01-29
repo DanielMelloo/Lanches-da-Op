@@ -295,11 +295,13 @@ def stores():
         return redirect(url_for('index'))
 
     if request.method == 'POST':
-        print(f"DEBUG: Admin Stores POST. Form: {request.form}")
         action = request.form.get('action')
         store_id = request.form.get('store_id')
         name = request.form.get('name')
         whatsapp_number = request.form.get('whatsapp_number')
+        
+        # DEBUG FLASH
+        # flash(f"DEBUG: Action={action}, StoreID={store_id}, SubsiteID={subsite_id}", "info")
         
         if whatsapp_number:
             import re
