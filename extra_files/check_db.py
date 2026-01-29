@@ -7,16 +7,18 @@ with app.app_context():
     print("STORES:")
     stores = Store.query.all()
     for s in stores:
-        print(f"ID: {s.id} | Name: {s.name} | Subsite ID: {s.subsite_id} | Active: {s.active}")
+        print(f"STORE | ID: {s.id} | Name: {s.name} | SubsiteID: {s.subsite_id} | Active: {s.active}")
     
     print("-" * 50)
     print("USERS:")
     users = User.query.all()
     for u in users:
-        print(f"User: {u.id} | Dict: {u.__dict__}")
+        email = getattr(u, 'email', 'NoEmail')
+        role = getattr(u, 'role', 'NoRole')
+        print(f"USER  | ID: {u.id} | Email: {email} | SubsiteID: {u.subsite_id} | Role: {role}")
     
     print("-" * 50)
     print("SUBSITES:")
     subsites = Subsite.query.all()
     for s in subsites:
-        print(f"ID: {s.id} | Name: {s.name}")
+        print(f"SUBSITE | ID: {s.id} | Name: {s.name}")
