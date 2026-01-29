@@ -1,24 +1,31 @@
+import json
 from app import create_app
 from models import Store, User, Subsite
 
 app = create_app()
 with app.app_context():
-    print("-" * 50)
-    print("STORES:")
-    stores = Store.query.all()
-    for s in stores:
-        print(f"STORE | ID: {s.id} | Name: {s.name} | SubsiteID: {s.subsite_id} | Active: {s.active}")
+    data = {"stores": [], "users": [], "subsites": []}
     
-    print("-" * 50)
-    print("USERS:")
-    users = User.query.all()
-    for u in users:
-        email = getattr(u, 'email', 'NoEmail')
-        role = getattr(u, 'role', 'NoRole')
-        print(f"USER  | ID: {u.id} | Email: {email} | SubsiteID: {u.subsite_id} | Role: {role}")
-    
-    print("-" * 50)
-    print("SUBSITES:")
-    subsites = Subsite.query.all()
-    for s in subsites:
-        print(f"SUBSITE | ID: {s.id} | Name: {s.name}")
+    for s in Store.query.all():
+        data["stores"].append({
+            "id": s.id,
+            "name": s.name,
+            "subsite_id": s.subsite_id,
+            "active": s.active
+        })
+        
+    for u in User.query.all():
+        data["users"].append({
+            "id": u.id,
+            "email": getattr(u, 'email', 'NoEmail'),
+            "role": getattr(u, 'role', 'NoRole'),
+            "subsite_id": u.subsite_id
+        })
+        
+    for s in Subsite.query.all():
+        data["subsites"].append({
+            "id": s.id,
+            "name": s.name
+        })
+        
+    print(json.dumps(data))
