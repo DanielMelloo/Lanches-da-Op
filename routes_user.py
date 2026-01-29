@@ -30,7 +30,8 @@ def menu(subsite_id):
     # Query items through Store relationship
     menu_items = Item.query.join(Store).filter(
         Store.subsite_id == subsite_id,
-        Item.active == True
+        Item.active == True,
+        Store.active == True
     ).all()
     
     cart = session.get('cart', {})
