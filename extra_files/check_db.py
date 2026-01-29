@@ -13,7 +13,7 @@ with app.app_context():
     print("USERS:")
     users = User.query.all()
     for u in users:
-        print(f"Email: {u.email} | Role: {u.role} | Subsite ID: {u.subsite_id}")
+        print(f"User: {u.id} | Dict: {u.__dict__}")
     
     print("-" * 50)
     print("SUBSITES:")
