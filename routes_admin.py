@@ -318,8 +318,6 @@ def stores():
                     db.session.delete(store)
                     db.session.commit()
                     flash('Loja excluída.', 'success')
-            else:
-                 flash(f"DEBUG ERROR: Store ID {store_id} (Subsite {store.subsite_id if store else 'None'}) mismatch with User Subsite {subsite_id}", "error")
                 elif action == 'manual_dispatch':
                     if not store.whatsapp_number:
                         flash(f'Loja {store.name} não possui WhatsApp cadastrado.', 'warning')
