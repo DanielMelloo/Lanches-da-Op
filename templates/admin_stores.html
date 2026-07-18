@@ -608,6 +608,9 @@ block content %}
             <span class="chip" onclick="insertValSub('{endereco}')">{endereco}</span>
             <span class="chip" onclick="insertValSub('{observacao}')">{observacao}</span>
             <span class="chip" onclick="insertValSub('{resumo_geral}')" style="border-color: var(--accent-cyan); color: var(--accent-cyan)">{resumo_geral}</span>
+            <span class="chip" onclick="insertValSub('{total por área}')" style="border-color: var(--accent-cyan); color: var(--accent-cyan)">{total por área}</span>
+            <span class="chip" onclick="insertValSub('{endereco replan}')">{endereco replan}</span>
+            <span class="chip" onclick="insertValSub('{Aviso}')" style="border-color: var(--accent-yellow); color: var(--accent-yellow)">{Aviso}</span>
           </div>
         </div>
 
@@ -908,10 +911,10 @@ block content %}
 
   function formatTemplateText(text) {
     const mocks = {
-      '{saudacao}': 'Boa tarde',
+      '{saudacao}': 'Boa tarde! Seguem os pedidos da rodada:',
       '{cliente}': 'Daniel Mello',
       '{loja}': 'RC Espetaria',
-      '{itens}': 'Daniel Mello\tETA\tEspeto de Carne Com Legumes\t3\nDaniel Mello\tETA\tEspeto de Carne\t2\n\t\tEspeto de Carne Com Legumes\t4\n\t\tCoca-Cola Lata\t1',
+      '{itens}': 'Daniel Mello\tEspeto de Carne Com Legumes\t3\nDaniel Mello\tEspeto de Carne\t2\n\tEspeto de Carne Com Legumes\t4\n\tCoca-Cola Lata\t1',
       '{itens_inline}': '2x Espeto de Carne - 1x Acompanhamento de Mandioca',
       '{total}': 'R$ 38.50',
       '{pagamento}': 'Pix (Online)',
@@ -919,7 +922,10 @@ block content %}
       '{observacao}': 'Sem cebola no espeto de carne, por favor.',
       '{id_pedido}': '42',
       '{data}': '18/07 11:45',
-      '{resumo_geral}': 'Item\tETA\nCoca-Cola Lata\t1\nEspeto de Carne\t2\nEspeto de Carne Com Legumes\t7'
+      '{resumo_geral}': '1x Coca-Cola Lata\n2x Espeto de Carne\n7x Espeto de Carne Com Legumes',
+      '{total por área}': 'Item\tETA\nCoca-Cola Lata\t1\nEspeto de Carne\t2\nEspeto de Carne Com Legumes\t7',
+      '{endereco replan}': 'Refinaria de Paulínia (REPLAN) - Rodovia Professor Zeferino Vaz, Paulínia - SP',
+      '{Aviso}': '⚠️ Mensagem automática do Centralizador Lanches OP\n\nCaso eu não responda imediatamente, é possível que esteja em atendimento ou atuando na área. Assim que possível, retornarei o contato.\n\nAgradeço pela compreensão!'
     };
     
     let rendered = text;

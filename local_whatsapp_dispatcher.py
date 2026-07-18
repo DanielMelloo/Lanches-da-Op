@@ -260,7 +260,7 @@ def run_dispatcher():
                         body_tmpl = "\n".join(body_lines)
                         footer_txt = "\n".join(footer_lines)
 
-                        # Calculate Batch Summary (Resumo Geral) grouped by sector
+                        # Calculate Total Por Área (matricial por setor)
                         sectors = set()
                         summary_matrix = {}
                         for order_id_iter, items_iter in orders_data.items():
@@ -287,18 +287,46 @@ def run_dispatcher():
                                 qty = sector_qtys.get(sec, 0)
                                 row_cols.append(str(qty))
                             summary_rows.append("\t".join(row_cols))
-                        batch_summary_str = "\n".join(summary_rows)
+                        total_por_area_str = "\n".join(summary_rows)
+
+                        # Calculate Resumo Geral (soma simples de itens)
+                        batch_summary_items = {}
+                        for order_id_iter, items_iter in orders_data.items():
+                             for it in items_iter:
+                                 key = it['name']
+                                 if it['subitems']: key += f" ({it['subitems']})"
+                                 
+                                 if key not in batch_summary_items:
+                                     batch_summary_items[key] = 0
+                                 batch_summary_items[key] += it['quantity']
+                        
+                        resumo_geral_lines = []
+                        for key, qty in sorted(batch_summary_items.items()):
+                            resumo_geral_lines.append(f"{qty}x {key}")
+                        resumo_geral_str = "\n".join(resumo_geral_lines)
 
                         # Global Vars Context
                         now_hour = datetime.now().hour
-                        if 5 <= now_hour < 12: saudacao = "Bom dia"
-                        elif 12 <= now_hour < 18: saudacao = "Boa tarde"
-                        else: saudacao = "Boa noite"
+                        if 5 <= now_hour < 12: s_txt = "Bom dia"
+                        elif 12 <= now_hour < 18: s_txt = "Boa tarde"
+                        else: s_txt = "Boa noite"
+                        saudacao = f"{s_txt}! Seguem os pedidos da rodada:"
+                        
+                        endereco_replan = "Refinaria de Paulínia (REPLAN) - Rodovia Professor Zeferino Vaz, Paulínia - SP"
+                        
+                        aviso_text = (
+                            "⚠️ Mensagem automática do Centralizador Lanches OP\n\n"
+                            "Caso eu não responda imediatamente, é possível que esteja em atendimento ou atuando na área. Assim que possível, retornarei o contato.\n\n"
+                            "Agradeço pela compreensão!"
+                        )
                         
                         def replace_globals(txt):
                             t = txt.replace('{loja}', store.name)
                             t = t.replace('{saudacao}', saudacao)
-                            t = t.replace('{resumo_geral}', batch_summary_str)
+                            t = t.replace('{resumo_geral}', resumo_geral_str)
+                            t = t.replace('{total por área}', total_por_area_str)
+                            t = t.replace('{endereco replan}', endereco_replan)
+                            t = t.replace('{Aviso}', aviso_text)
                             return t
 
                         final_header = replace_globals(header_txt)
@@ -342,10 +370,10 @@ def run_dispatcher():
                             for key, data in aggregated_items.items():
                                 qt = data['qt']
                                 if is_first:
-                                    items_str += f"{user_name}\t{addr}\t{key}\t{qt}"
+                                    items_str += f"{user_name}\t{key}\t{qt}"
                                     is_first = False
                                 else:
-                                    items_str += f"\n\t\t{key}\t{qt}"
+                                    items_str += f"\n\t{key}\t{qt}"
                                 items_inline_list.append(f"{qt}x {key}")
                             items_inline_str = " - ".join(items_inline_list)
                             
