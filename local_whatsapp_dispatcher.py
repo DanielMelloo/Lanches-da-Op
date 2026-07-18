@@ -216,11 +216,25 @@ def run_dispatcher():
                     
                     operations = [] # List of (text, [order_ids])
 
-                    if store.whatsapp_template and store.whatsapp_template.strip():
-                        # Smart Template Parsing
-                        tmpl_normalized = store.whatsapp_template.replace('\r\n', '\n')
-                        full_tmpl_lines = tmpl_normalized.split('\n')
+                    template_to_use = store.whatsapp_template
+                    if not template_to_use or not template_to_use.strip():
+                        template_to_use = (
+                            "{saudacao}! Seguem os pedidos da rodada para a loja *{loja}*:\n\n"
+                            "👤 *{cliente}* (Pedido #{id_pedido})\n"
+                            "📍 Local: {endereco}\n"
+                            "🛒 *Itens:*\n{itens}\n"
+                            "💰 Total: {total}\n"
+                            "💳 Pagamento: {pagamento}\n"
+                            "----------------------------------------\n\n"
+                            "📊 *RESUMO GERAL DOS PEDIDOS:*\n"
+                            "{resumo_geral}\n\n"
+                            "⚠️ _Mensagem gerada automaticamente pelo centralizador Lanches OP._"
+                        )
                         
+                    # Smart Template Parsing
+                    tmpl_normalized = template_to_use.replace('\r\n', '\n')
+                    if True:
+                        full_tmpl_lines = tmpl_normalized.split('\n')
                         row_vars = ['{id_pedido}', '{cliente}', '{telefone}', '{endereco}', 
                                     '{pagamento}', '{data}', '{itens}', '{itens_inline}', 
                                     '{total}', '{observacao}']
