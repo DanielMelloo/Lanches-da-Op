@@ -266,28 +266,27 @@ def run_dispatcher():
                         for order_id_iter, items_iter in orders_data.items():
                              order_obj = next((o for o in orders_to_mark if o.id == order_id_iter), None)
                              sector_name = order_obj.sector.name if (order_obj and order_obj.sector) else "N/A"
-                             sectors.add(sector_name)
-                             
+                                                    # Calculate Total Por Área (grouped by sector, no headers, <area> \n <item> <quantity>)
+                        sector_items = {}
+                        for order_id_iter, items_iter in orders_data.items():
+                             order_obj = next((o for o in orders_to_mark if o.id == order_id_iter), None)
+                             sector_name = order_obj.sector.name if (order_obj and order_obj.sector) else "N/A"
+                             if sector_name not in sector_items:
+                                 sector_items[sector_name] = {}
                              for it in items_iter:
                                  key = it['name']
                                  if it['subitems']: key += f" ({it['subitems']})"
-                                 
-                                 if key not in summary_matrix:
-                                     summary_matrix[key] = {}
-                                 if sector_name not in summary_matrix[key]:
-                                     summary_matrix[key][sector_name] = 0
-                                 summary_matrix[key][sector_name] += it['quantity']
-                                 
-                        sorted_sectors = sorted(list(sectors))
-                        summary_header = "Item\t" + "\t".join(sorted_sectors)
-                        summary_rows = [summary_header]
-                        for item_key, sector_qtys in sorted(summary_matrix.items()):
-                            row_cols = [item_key]
-                            for sec in sorted_sectors:
-                                qty = sector_qtys.get(sec, 0)
-                                row_cols.append(str(qty))
-                            summary_rows.append("\t".join(row_cols))
-                        total_por_area_str = "\n".join(summary_rows)
+                                 if key not in sector_items[sector_name]:
+                                     sector_items[sector_name][key] = 0
+                                 sector_items[sector_name][key] += it['quantity']
+                        
+                        sector_blocks = []
+                        for sec_name, items_map in sorted(sector_items.items()):
+                            block_lines = [sec_name]
+                            for item_key, qty in sorted(items_map.items()):
+                                block_lines.append(f"{item_key}\t{qty}")
+                            sector_blocks.append("\n".join(block_lines))
+                        total_por_area_str = "\n\n".join(sector_blocks)
 
                         # Calculate Resumo Geral (soma simples de itens)
                         batch_summary_items = {}
@@ -312,11 +311,15 @@ def run_dispatcher():
                         else: s_txt = "Boa noite"
                         saudacao = f"{s_txt}! Seguem os pedidos da rodada:"
                         
-                        endereco_replan = "Refinaria de Paulínia (REPLAN) - Rodovia Professor Zeferino Vaz, Paulínia - SP"
+                        endereco_replan = (
+                            "REPLAN - Refinaria Planalto de Paulínia, SP-332, Km 130 - s/n - Bonfim, Paulínia - SP, 13140-000\n"
+                            "REPLAN - Portaria Sul"
+                        )
                         
                         aviso_text = (
-                            "⚠️ Mensagem automática do Centralizador Lanches OP\n\n"
+                            "⚠️ *Mensagem automática do Centralizador Lanches OP*\n\n"
                             "Caso eu não responda imediatamente, é possível que esteja em atendimento ou atuando na área. Assim que possível, retornarei o contato.\n\n"
+                            "Também estamos cientes do acréscimo no valor do frete em razão da cobrança de pedágio.\n\n"
                             "Agradeço pela compreensão!"
                         )
                         
@@ -332,7 +335,7 @@ def run_dispatcher():
                         final_header = replace_globals(header_txt)
                         final_footer = replace_globals(footer_txt)
 
-                        # Process Body Loop
+                        # Process Body Loop - Group orders by User Name to avoid duplication
                         current_batch_text = []
                         current_batch_ids = []
                         
@@ -341,61 +344,78 @@ def run_dispatcher():
                         print(f"[DEBUG] sorted_orders keys: {list(orders_data.keys())} (Types: {[type(k) for k in orders_data.keys()]})")
                         print(f"[DEBUG] orders_to_mark IDs: {[o.id for o in orders_to_mark]} (Types: {[type(o.id) for o in orders_to_mark]})")
                         
+                        user_groups = {}
                         for order_id, items in sorted_orders:
                             order_obj = next((o for o in orders_to_mark if o.id == order_id), None)
                             if not order_obj:
                                 print(f"[DEBUG] Skipping order_id {order_id} because it was not found in orders_to_mark!")
                                 continue
-
-                            # Aggregate Items
-                            aggregated_items = {}
-                            total_val = 0.0
-                            for it in items:
-                                key = it['name']
-                                if it['subitems']: key += f" ({it['subitems']})"
-                                if key not in aggregated_items:
-                                    aggregated_items[key] = {'qt': 0, 'price': float(it.get('price', 0))}
-                                aggregated_items[key]['qt'] += it['quantity']
-                                total_val += (float(it.get('price', 0)) * it['quantity'])
-
-                            # Attributes
-                            addr = order_obj.sector.name if order_obj.sector else "N/A"
-                            obs = "N/A" # Placeholder
+                            
                             user_name = order_obj.user.name if order_obj.user else 'Cliente'
                             user_phone = order_obj.user.phone if order_obj.user else 'N/A'
-                            
-                            items_str = ""
-                            items_inline_list = []
-                            is_first = True
-                            for key, data in aggregated_items.items():
-                                qt = data['qt']
-                                if is_first:
-                                    items_str += f"{user_name}\t{key}\t{qt}"
-                                    is_first = False
-                                else:
-                                    items_str += f"\n\t{key}\t{qt}"
-                                items_inline_list.append(f"{qt}x {key}")
-                            items_inline_str = " - ".join(items_inline_list)
+                            addr = order_obj.sector.name if order_obj.sector else 'N/A'
                             
                             pay_method = "A Combinar"
                             if order_obj.pix_charge_id: pay_method = "Pix (Online)"
                             elif order_obj.payment_status == 'approved': pay_method = "Pago"
+                            
+                            if user_name not in user_groups:
+                                user_groups[user_name] = {
+                                    'items': [],
+                                    'order_ids': [],
+                                    'user_phone': user_phone,
+                                    'address': addr,
+                                    'total_val': 0.0,
+                                    'pay_methods': set(),
+                                    'created_at': order_obj.created_at
+                                }
+                            
+                            user_groups[user_name]['items'].extend(items)
+                            user_groups[user_name]['order_ids'].append(order_id)
+                            user_groups[user_name]['pay_methods'].add(pay_method)
+                            for it in items:
+                                user_groups[user_name]['total_val'] += (float(it.get('price', 0)) * it['quantity'])
 
+                        # Sort user groups chronologically by their first order ID
+                        sorted_users = sorted(user_groups.items(), key=lambda x: x[1]['order_ids'][0])
+
+                        for user_name, data in sorted_users:
+                            # Aggregate Items
+                            aggregated_items = {}
+                            for it in data['items']:
+                                key = it['name']
+                                if it['subitems']: key += f" ({it['subitems']})"
+                                if key not in aggregated_items:
+                                    aggregated_items[key] = 0
+                                aggregated_items[key] += it['quantity']
+                                
+                            items_str = ""
+                            items_inline_list = []
+                            is_first = True
+                            for key, qty in sorted(aggregated_items.items()):
+                                if is_first:
+                                    items_str += f"{user_name}\t{key}\t{qty}"
+                                    is_first = False
+                                else:
+                                    items_str += f"\n\t{key}\t{qty}"
+                                items_inline_list.append(f"{qty}x {key}")
+                            items_inline_str = " - ".join(items_inline_list)
+                            
+                            pay_method_str = ", ".join(sorted(list(data['pay_methods'])))
+                            
                             # Replace Row Vars
                             row_txt = body_tmpl
-                            # Attributes mapping
                             replacements = {
-                                '{id_pedido}': str(order_id),
-                                '{data}': order_obj.created_at.strftime('%d/%m %H:%M'),
+                                '{id_pedido}': ", ".join(map(str, data['order_ids'])),
+                                '{data}': data['created_at'].strftime('%d/%m %H:%M'),
                                 '{itens}': items_str,
                                 '{itens_inline}': items_inline_str,
-                                '{total}': f"R$ {total_val:.2f}",
+                                '{total}': f"R$ {data['total_val']:.2f}",
                                 '{cliente}': user_name,
-                                '{telefone}': user_phone,
-                                '{endereco}': addr,
-                                '{pagamento}': pay_method,
-                                '{observacao}': obs,
-                                # Also allow globals in body if needed
+                                '{telefone}': data['user_phone'],
+                                '{endereco}': data['address'],
+                                '{pagamento}': pay_method_str,
+                                '{observacao}': "N/A",
                                 '{loja}': store.name,
                                 '{saudacao}': saudacao
                             }
@@ -404,11 +424,10 @@ def run_dispatcher():
                                 row_txt = row_txt.replace(k, v)
                             
                             current_batch_text.append(row_txt)
-                            current_batch_ids.append(order_id)
+                            current_batch_ids.extend(data['order_ids'])
                         
                         if current_batch_text:
                             # Assemble Final Message
-                            # Use newlines to separate header, body items, footer
                             body_block = "\n".join(current_batch_text)
                             
                             parts = []
@@ -416,7 +435,7 @@ def run_dispatcher():
                             if body_block.strip(): parts.append(body_block)
                             if final_footer.strip(): parts.append(final_footer)
                             
-                            final_msg = "\n".join(parts) # or \n\n if preferred spacing
+                            final_msg = "\n".join(parts)
                             if final_msg.strip():
                                 operations.append((final_msg, current_batch_ids))
 
