@@ -263,7 +263,6 @@ def manage_users():
                 flash('Subsite atualizado.', 'success')
 
             elif action == 'update_admin_subsites':
-                from models import Subsite
                 subsite_ids = request.form.getlist('subsite_ids')
                 user.managed_subsites = []
                 for s_id in subsite_ids:

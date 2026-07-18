@@ -85,7 +85,7 @@
         // Or just let it replace. Let's add opacity transition.
         container.style.opacity = '0.5';
 
-        const url = `/api/orders?filter=${currentFilter}&page=${page}&only_delivered=${onlyDelivered}`;
+        const url = `{{ url_for('user.api_orders') }}?filter=${currentFilter}&page=${page}&only_delivered=${onlyDelivered}`;
 
         fetch(url)
             .then(response => response.text())
