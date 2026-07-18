@@ -19,7 +19,7 @@ login_manager.login_view = 'auth.login'
 def load_user(user_id):
     return db.session.get(User, int(user_id))
 
-def create_app():
+def create_app(config_overrides=None):
     app = Flask(__name__)
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev')
     
@@ -36,6 +36,9 @@ def create_app():
         app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{db_user}@{db_host}/{db_name}"
         
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+    if config_overrides:
+        app.config.update(config_overrides)
 
     # Persistent Sessions (Remember Me)
     from datetime import timedelta
