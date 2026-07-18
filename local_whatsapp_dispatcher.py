@@ -202,11 +202,12 @@ def run_dispatcher():
             print("Opening WhatsApp Web...")
             page.goto("https://web.whatsapp.com/")
             
+            login_selector = 'div[contenteditable="true"], [data-testid="chat-list"], #pane-side'
             try:
-                page.wait_for_selector('div[contenteditable="true"]', timeout=30000)
+                page.wait_for_selector(login_selector, timeout=30000)
             except:
                 print("Action Required: Please log in to WhatsApp Web.")
-                page.wait_for_selector('div[contenteditable="true"]', timeout=300000)
+                page.wait_for_selector(login_selector, timeout=300000)
 
             for num, stores_dict in dispatches.items():
                 for store_id, orders_data in stores_dict.items():
@@ -363,31 +364,39 @@ def run_dispatcher():
                             page.goto(f"https://web.whatsapp.com/send?phone={num}")
                             
                             # 2. Wait for input box
-                            inp_selector = 'div[contenteditable="true"][data-tab="10"]'
+                            inp_selector = 'footer div[contenteditable="true"]'
                             try:
                                 page.wait_for_selector(inp_selector, timeout=20000)
                             except:
-                                # Fallback selector
-                                inp_selector = 'div[contenteditable="true"]'
-                                page.wait_for_selector(inp_selector, timeout=20000)
+                                # Fallback selectors
+                                try:
+                                    inp_selector = 'div[contenteditable="true"][data-tab="10"]'
+                                    page.wait_for_selector(inp_selector, timeout=10000)
+                                except:
+                                    inp_selector = 'div[role="textbox"]'
+                                    page.wait_for_selector(inp_selector, timeout=10000)
 
                             time.sleep(1) # Stability
                             
-                            # 3. Type message (fill is faster/safer than type for long text)
-                            # We might need to handle line breaks. fill() usually handles \n well in contenteditable.
+                            # 3. Focus and Fill message
+                            page.focus(inp_selector)
                             page.fill(inp_selector, text)
                             time.sleep(0.5)
                             
                             # 4. Press Enter
                             page.keyboard.press("Enter")
                             
+                            # 5. Fallback: Click the Send Button if visible
+                            time.sleep(1.5)
                             try:
-                                # Optional: Backup click if Enter didn't work (wait 2s to see if sent)
-                                # Check if text is still there? 
-                                # Simpler: Just wait a bit.
-                                time.sleep(3) # Increased sleep to ensure delivery
+                                send_btn = page.locator('span[data-testid="send"], button[data-testid="compose-btn-send"], [data-icon="send"]').first
+                                if send_btn.is_visible():
+                                    send_btn.click()
+                                    time.sleep(1)
                             except:
                                 pass
+                                
+                            time.sleep(2) # Final delay to ensure transmission
 
                             print(f"Sent to {num}")
                             
