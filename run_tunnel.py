@@ -5,7 +5,7 @@ import time
 import threading
 
 def run():
-    key_path = os.path.join(os.path.expanduser('~'), '.ssh', 'Keyzinha.pem')
+    key_path = os.path.join(os.path.expanduser('~'), '.ssh', 'shark-note')
     
     cmd = [
         "ssh", 
