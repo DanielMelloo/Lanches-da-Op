@@ -4,115 +4,164 @@
 
 {% block content %}
 <div style="display: flex; justify-content: center; padding-top: 20px;">
-    <div class="glass-panel" style="width: 100%; max-width: 500px; padding: 40px;">
+    <div class="glass-panel" style="width: 100%; max-width: 550px; padding: 40px;">
 
-        <!-- Profile Header & Avatar -->
-        <div class="text-center mb-xl">
-            <div style="position: relative; width: 90px; height: 90px; margin: 0 auto 15px;">
-                {% if current_user.avatar_url %}
-                <img id="avatar_preview_img" src="{{ current_user.avatar_url }}" alt="Avatar" 
-                     style="width: 90px; height: 90px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent-cyan); box-shadow: 0 0 20px rgba(0,255,255,0.4);">
-                {% else %}
-                <div id="avatar_placeholder" style="width: 90px; height: 90px; background: var(--accent-cyan); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px rgba(0,255,255,0.4);">
-                    <i class="ph-bold ph-user" style="font-size: 45px; color: #000;"></i>
-                </div>
-                {% endif %}
-                <!-- Upload button badge -->
-                <label for="avatar_input" style="position: absolute; bottom: 0; right: 0; background: var(--accent-cyan); color: #000; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid #000; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'">
-                    <i class="ph ph-camera" style="font-size: 16px;"></i>
-                </label>
+        <!-- Tabs Selector -->
+        <div class="flex justify-center mb-lg">
+            <div class="glass-panel" style="display: inline-flex; padding: 5px; gap: 5px; border-radius: 50px; border-color: rgba(255,255,255,0.08);">
+                <button type="button" onclick="switchProfileTab('info')" id="tab-info" class="btn-secondary"
+                    style="border: none; border-radius: 40px; padding: 0 20px; height: 36px; background: var(--accent-cyan); color: #000; transition: all 0.2s;">Meus Dados</button>
+                <button type="button" onclick="switchProfileTab('attachments')" id="tab-attachments" class="btn-secondary"
+                    style="border: none; border-radius: 40px; padding: 0 20px; height: 36px; opacity: 0.7; transition: all 0.2s; color: var(--accent-cyan); background: transparent;">Fotos Anexadas ({{ current_user.attachments|length }})</button>
             </div>
-            <h2 style="margin: 0; font-size: 1.8em;">Meu Perfil</h2>
-            <div class="text-muted">Gerencie suas informações</div>
         </div>
 
-        <form method="POST" enctype="multipart/form-data">
-            <!-- Hidden input for file -->
-            <input type="file" id="avatar_input" name="avatar" accept="image/*" style="display: none;" onchange="previewAvatar(this)">
-
-            <!-- Key Section (Highlighted & Centered) -->
-            <div
-                style="margin-bottom: 32px; padding: 24px; border-radius: 16px; position: relative; overflow: hidden; background: rgba(0,255,255,0.03); border: 1px solid rgba(0,255,255,0.1); text-align: center;">
-                <div
-                    style="position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);">
-                </div>
-
-                <label for="petro_key"
-                    style="color: var(--accent-cyan); font-weight: bold; display: block; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; font-size: 0.9em;">
-                    Sua Chave de Acesso
-                </label>
-
-                <div style="position: relative; max-width: 200px; margin: 0 auto;">
-                    <input type="text" id="petro_key" name="petro_key" value="{{ current_user.petro_key }}"
-                        maxlength="4" required
-                        style="text-transform: uppercase; font-size: 2em; letter-spacing: 4px; text-align: center; 
-                               background: transparent; border: none; border-bottom: 2px solid var(--accent-cyan); 
-                               color: white; padding: 10px; font-weight: bold; width: 100%; outline: none; margin-bottom: 0;"
-                        onfocus="this.style.borderColor='var(--accent-purple)'"
-                        onblur="this.style.borderColor='var(--accent-cyan)'">
-                    <i class="ph-duotone ph-key"
-                        style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); color: var(--accent-cyan); opacity: 0.5; font-size: 1.2em;"></i>
-                </div>
-
-                <p class="text-muted mt-sm" style="font-size: 0.85em;">Use esta chave para fazer login.</p>
-            </div>
-
-            <!-- Personal Info -->
-            <div class="form-group" style="margin-bottom: 20px;">
-                <label for="name" style="margin-bottom: 8px; display: block;">Nome Completo</label>
-                <div style="position: relative;">
-                    <input type="text" id="name" name="name" value="{{ current_user.name }}" placeholder="Seu nome"
-                        required style="padding-left: 45px; margin-bottom: 0;">
-                    <i class="ph ph-identification-card"
-                        style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 1.2em;"></i>
-                </div>
-            </div>
-
-            <div class="form-group" style="margin-bottom: 20px;">
-                <label for="phone" style="margin-bottom: 8px; display: block;">Telefone / WhatsApp</label>
-                <div style="position: relative;">
-                    <input type="tel" id="phone" name="phone" value="{{ current_user.phone or '' }}"
-                        placeholder="(00) 00000-0000" style="padding-left: 45px; margin-bottom: 0;">
-                    <i class="ph ph-whatsapp-logo"
-                        style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 1.2em;"></i>
-                </div>
-            </div>
-
-            <!-- Password Change Section -->
-            <div style="margin-bottom: 30px; padding: 20px; border-radius: 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);">
-                <label class="checkbox-container" style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 0;">
-                    <input type="checkbox" name="change_password" value="true" id="change-pass-toggle" onchange="togglePasswordSection(this)" style="width: 18px; height: 18px; accent-color: var(--accent-cyan);">
-                    <span style="font-weight: bold; color: var(--accent-cyan);">Alterar minha senha</span>
-                </label>
-                
-                <div id="password-fields" style="display: none; flex-direction: column; gap: 15px; margin-top: 15px;">
-                    {% if current_user.password_hash %}
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label for="current_password" style="font-size: 0.9em; margin-bottom: 5px; display: block;">Senha Atual</label>
-                        <input type="password" id="current_password" name="current_password" placeholder="Digite sua senha atual">
+        <!-- Tab 1: Info (Details & Password) -->
+        <div id="profile-info-section">
+            <!-- Profile Header & Avatar -->
+            <div class="text-center mb-xl">
+                <div style="position: relative; width: 90px; height: 90px; margin: 0 auto 15px;">
+                    {% if current_user.avatar_url %}
+                    <img id="avatar_preview_img" src="{{ current_user.avatar_url }}" alt="Avatar" 
+                         style="width: 90px; height: 90px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent-cyan); box-shadow: 0 0 20px rgba(0,255,255,0.4);">
+                    {% else %}
+                    <div id="avatar_placeholder" style="width: 90px; height: 90px; background: var(--accent-cyan); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px rgba(0,255,255,0.4);">
+                        <i class="ph-bold ph-user" style="font-size: 45px; color: #000;"></i>
                     </div>
                     {% endif %}
-                    
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label for="new_password" style="font-size: 0.9em; margin-bottom: 5px; display: block;">Nova Senha</label>
-                        <input type="password" id="new_password" name="new_password" placeholder="Mínimo 6 caracteres" minlength="6">
-                    </div>
-                    
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label for="confirm_password" style="font-size: 0.9em; margin-bottom: 5px; display: block;">Confirmar Nova Senha</label>
-                        <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirme sua nova senha" minlength="6">
-                    </div>
+                    <!-- Upload button badge -->
+                    <label for="avatar_input" style="position: absolute; bottom: 0; right: 0; background: var(--accent-cyan); color: #000; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid #000; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'">
+                        <i class="ph ph-camera" style="font-size: 16px;"></i>
+                    </label>
                 </div>
+                <h2 style="margin: 0; font-size: 1.8em;">Meu Perfil</h2>
+                <div class="text-muted">Gerencie suas informações</div>
             </div>
 
-            <!-- Buttons Centered -->
-            <div style="text-align: center; margin-top: 30px;">
-                <button type="submit" class="btn-neon"
-                    style="height: 50px; font-size: 1.1em; padding: 0 40px; min-width: 200px;">
-                    <i class="ph-bold ph-floppy-disk"></i> Salvar Alterações
-                </button>
+            <form method="POST" enctype="multipart/form-data">
+                <!-- Hidden input for file -->
+                <input type="file" id="avatar_input" name="avatar" accept="image/*" style="display: none;" onchange="previewAvatar(this)">
+
+                <!-- Key Section (Highlighted & Centered) -->
+                <div
+                    style="margin-bottom: 32px; padding: 24px; border-radius: 16px; position: relative; overflow: hidden; background: rgba(0,255,255,0.03); border: 1px solid rgba(0,255,255,0.1); text-align: center;">
+                    <div
+                        style="position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);">
+                    </div>
+
+                    <label for="petro_key"
+                        style="color: var(--accent-cyan); font-weight: bold; display: block; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; font-size: 0.9em;">
+                        Sua Chave de Acesso
+                    </label>
+
+                    <div style="position: relative; max-width: 200px; margin: 0 auto;">
+                        <input type="text" id="petro_key" name="petro_key" value="{{ current_user.petro_key }}"
+                            maxlength="4" required
+                            style="text-transform: uppercase; font-size: 2em; letter-spacing: 4px; text-align: center; 
+                                   background: transparent; border: none; border-bottom: 2px solid var(--accent-cyan); 
+                                   color: white; padding: 10px; font-weight: bold; width: 100%; outline: none; margin-bottom: 0;"
+                            onfocus="this.style.borderColor='var(--accent-purple)'"
+                            onblur="this.style.borderColor='var(--accent-cyan)'">
+                        <i class="ph-duotone ph-key"
+                            style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); color: var(--accent-cyan); opacity: 0.5; font-size: 1.2em;"></i>
+                    </div>
+
+                    <p class="text-muted mt-sm" style="font-size: 0.85em;">Use esta chave para fazer login.</p>
+                </div>
+
+                <!-- Personal Info -->
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label for="name" style="margin-bottom: 8px; display: block;">Nome Completo</label>
+                    <div style="position: relative;">
+                        <input type="text" id="name" name="name" value="{{ current_user.name }}" placeholder="Seu nome"
+                            required style="padding-left: 45px; margin-bottom: 0;">
+                        <i class="ph ph-identification-card"
+                            style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 1.2em;"></i>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label for="phone" style="margin-bottom: 8px; display: block;">Telefone / WhatsApp</label>
+                    <div style="position: relative;">
+                        <input type="tel" id="phone" name="phone" value="{{ current_user.phone or '' }}"
+                            placeholder="(00) 00000-0000" style="padding-left: 45px; margin-bottom: 0;">
+                        <i class="ph ph-whatsapp-logo"
+                            style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 1.2em;"></i>
+                    </div>
+                </div>
+
+                <!-- Password Change Section -->
+                <div style="margin-bottom: 30px; padding: 20px; border-radius: 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);">
+                    <label class="checkbox-container" style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 0;">
+                        <input type="checkbox" name="change_password" value="true" id="change-pass-toggle" onchange="togglePasswordSection(this)" style="width: 18px; height: 18px; accent-color: var(--accent-cyan);">
+                        <span style="font-weight: bold; color: var(--accent-cyan);">Alterar minha senha</span>
+                    </label>
+                    
+                    <div id="password-fields" style="display: none; flex-direction: column; gap: 15px; margin-top: 15px;">
+                        {% if current_user.password_hash %}
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="current_password" style="font-size: 0.9em; margin-bottom: 5px; display: block;">Senha Atual</label>
+                            <input type="password" id="current_password" name="current_password" placeholder="Digite sua senha atual">
+                        </div>
+                        {% endif %}
+                        
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="new_password" style="font-size: 0.9em; margin-bottom: 5px; display: block;">Nova Senha</label>
+                            <input type="password" id="new_password" name="new_password" placeholder="Mínimo 6 caracteres" minlength="6">
+                        </div>
+                        
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="confirm_password" style="font-size: 0.9em; margin-bottom: 5px; display: block;">Confirmar Nova Senha</label>
+                            <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirme sua nova senha" minlength="6">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Buttons Centered -->
+                <div style="text-align: center; margin-top: 30px;">
+                    <button type="submit" class="btn-neon"
+                        style="height: 50px; font-size: 1.1em; padding: 0 40px; min-width: 200px;">
+                        <i class="ph-bold ph-floppy-disk"></i> Salvar Alterações
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Tab 2: Attached Photos -->
+        <div id="profile-attachments-section" style="display: none;">
+            <h3 style="margin: 0 0 10px 0; font-size: 1.6em; color: var(--accent-cyan); text-align: center;">Fotos Anexadas</h3>
+            <p class="text-muted text-center mb-xl" style="font-size: 0.95em;">Galeria de fotos e comprovantes anexados à sua conta</p>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 15px; margin-bottom: 30px;">
+                {% for attach in current_user.attachments %}
+                <div class="glass-panel text-center relative p-xs" style="border-radius: 12px; overflow: hidden; background: rgba(0,0,0,0.25); display: flex; flex-direction: column; justify-content: space-between; border-color: rgba(255,255,255,0.05);">
+                    <img src="{{ attach.file_url }}" alt="{{ attach.filename }}" style="width: 100%; height: 110px; object-fit: cover; border-radius: 8px; margin-bottom: 8px;">
+                    <div class="text-ellipsis text-xs text-muted" style="max-width: 100px; margin: 0 auto 5px; overflow: hidden; white-space: nowrap; font-weight: 500;" title="{{ attach.filename }}">{{ attach.filename }}</div>
+                    <form action="{{ url_for('user.delete_attachment', attachment_id=attach.id) }}" method="POST" style="margin: 0;">
+                        <button type="submit" class="btn-icon text-danger" style="width: 32px; height: 32px; margin: 0 auto;" title="Remover Foto">
+                            <i class="ph ph-trash" style="font-size: 1.1rem;"></i>
+                        </button>
+                    </form>
+                </div>
+                {% else %}
+                <div class="col-span-full text-center text-muted p-xl" style="background: rgba(255,255,255,0.01); border-radius: 12px; border: 1px dashed rgba(255,255,255,0.08);">
+                    <i class="ph ph-image-square" style="font-size: 2rem; opacity: 0.5; display: block; margin-bottom: 10px; margin-left: auto; margin-right: auto;"></i>
+                    Você não possui fotos anexadas.
+                </div>
+                {% endfor %}
             </div>
-        </form>
+
+            <form action="{{ url_for('user.upload_attachment') }}" method="POST" enctype="multipart/form-data" class="glass-panel p-xl" style="border: 1px dashed rgba(0, 255, 255, 0.2); text-align: center; background: rgba(0, 255, 255, 0.01);">
+                <i class="ph ph-cloud-arrow-up" style="font-size: 2.8rem; color: var(--accent-cyan); display: block; margin-bottom: 10px; margin-left: auto; margin-right: auto;"></i>
+                <strong style="color: white; display: block; margin-bottom: 5px;">Anexar Nova Imagem</strong>
+                <span style="font-size: 0.85em; color: var(--text-muted); display: block; margin-bottom: 20px;">Permitido apenas fotos nos formatos JPG, PNG, WEBP e GIF.</span>
+                <label for="new_attachment_input" class="btn-neon" style="display: inline-flex; align-items: center; justify-content: center; height: 42px; cursor: pointer; padding: 0 25px; margin: 0 auto;">
+                    <i class="ph ph-file-image" style="margin-right: 8px;"></i> Selecionar Imagem
+                </label>
+                <input type="file" id="new_attachment_input" name="file" accept="image/*" style="display: none;" onchange="this.form.submit()">
+                <div class="text-xs text-muted mt-md">Tamanho máximo: 2MB</div>
+            </form>
+        </div>
 
         <div class="mt-lg pt-md" style="border-top: 1px solid rgba(255,255,255,0.1); text-align: center;">
             <a href="{{ url_for('auth.logout') }}" class="btn-secondary"
@@ -141,6 +190,37 @@
                 input.removeAttribute('required');
                 input.value = '';
             });
+        }
+    }
+    
+    function switchProfileTab(tab) {
+        const infoSection = document.getElementById('profile-info-section');
+        const attachSection = document.getElementById('profile-attachments-section');
+        const tabInfoBtn = document.getElementById('tab-info');
+        const tabAttachBtn = document.getElementById('tab-attachments');
+        
+        if (tab === 'info') {
+            infoSection.style.display = 'block';
+            attachSection.style.display = 'none';
+            
+            tabInfoBtn.style.background = 'var(--accent-cyan)';
+            tabInfoBtn.style.color = '#000';
+            tabInfoBtn.style.opacity = '1';
+            
+            tabAttachBtn.style.background = 'transparent';
+            tabAttachBtn.style.color = 'var(--accent-cyan)';
+            tabAttachBtn.style.opacity = '0.7';
+        } else {
+            infoSection.style.display = 'none';
+            attachSection.style.display = 'block';
+            
+            tabAttachBtn.style.background = 'var(--accent-cyan)';
+            tabAttachBtn.style.color = '#000';
+            tabAttachBtn.style.opacity = '1';
+            
+            tabInfoBtn.style.background = 'transparent';
+            tabInfoBtn.style.color = 'var(--accent-cyan)';
+            tabInfoBtn.style.opacity = '0.7';
         }
     }
     

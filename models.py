@@ -229,3 +229,13 @@ class PasswordChangeRequest(db.Model):
     created_at = db.Column(db.DateTime, default=get_sp_time)
     
     user = db.relationship('User', backref='password_requests')
+
+class UserAttachment(db.Model):
+    __tablename__ = 'user_attachments'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    file_url = db.Column(db.String(500), nullable=False)
+    filename = db.Column(db.String(256), nullable=False)
+    created_at = db.Column(db.DateTime, default=get_sp_time)
+    
+    user = db.relationship('User', backref=db.backref('attachments', lazy=True, cascade="all, delete-orphan"))

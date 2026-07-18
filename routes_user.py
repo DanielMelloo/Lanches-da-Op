@@ -393,7 +393,7 @@ def checkout(subsite_id):
         
         # Determine initial status and payment status
         if subsite.caixinha_active:
-            initial_status = Status.query.filter_by(name='Confirmado').first()
+            initial_status = Status.query.filter_by(name='Pagamento Confirmado').first()
             payment_required = False
             payment_status = 'approved'
         else:
@@ -653,3 +653,90 @@ def profile():
         return redirect(url_for('user.profile'))
         
     return render_template('user_profile.html')
+
+@user_bp.route('/profile/attachment/upload', methods=['POST'])
+@login_required
+def upload_attachment():
+    import os
+    from werkzeug.utils import secure_filename
+    from models import UserAttachment
+    from PIL import Image
+    import uuid
+
+    file = request.files.get('file')
+    if not file or not file.filename:
+        flash('Nenhum arquivo enviado.', 'error')
+        return redirect(url_for('user.profile'))
+
+    # 1. Extension check
+    filename = secure_filename(file.filename)
+    ext = os.path.splitext(filename)[1].lower()
+    if ext not in ['.jpg', '.jpeg', '.png', '.webp', '.gif']:
+        flash('Tipo de arquivo não permitido. Apenas JPG, PNG, WEBP e GIF são aceitos.', 'error')
+        return redirect(url_for('user.profile'))
+
+    # 2. Size check (max 2MB)
+    file.seek(0, os.SEEK_END)
+    file_size = file.tell()
+    file.seek(0)
+    if file_size > 2 * 1024 * 1024:
+        flash('Arquivo muito grande. O limite máximo é de 2MB.', 'error')
+        return redirect(url_for('user.profile'))
+
+    # 3. MIME-type check
+    mime_type = file.content_type
+    if not mime_type or not mime_type.startswith('image/'):
+        flash('Apenas arquivos de imagem são permitidos.', 'error')
+        return redirect(url_for('user.profile'))
+
+    # 4. Integrity check via PIL & sanitization
+    try:
+        img = Image.open(file)
+        img.verify()
+        
+        file.seek(0)
+        img = Image.open(file)
+        img_format = img.format if img.format in ['JPEG', 'PNG', 'WEBP', 'GIF'] else 'JPEG'
+
+        upload_dir = os.path.join(current_app.root_path, 'static', 'uploads', 'attachments')
+        os.makedirs(upload_dir, exist_ok=True)
+
+        new_filename = f"attach_{current_user.id}_{uuid.uuid4().hex}{ext}"
+        filepath = os.path.join(upload_dir, new_filename)
+
+        img.save(filepath, format=img_format)
+
+        new_attach = UserAttachment(
+            user_id=current_user.id,
+            file_url=f"/static/uploads/attachments/{new_filename}",
+            filename=filename
+        )
+        db.session.add(new_attach)
+        db.session.commit()
+        flash('Foto anexada com sucesso!', 'success')
+    except Exception as e:
+        flash('Imagem inválida ou corrompida.', 'error')
+
+    return redirect(url_for('user.profile'))
+
+@user_bp.route('/profile/attachment/<int:attachment_id>/delete', methods=['POST'])
+@login_required
+def delete_attachment(attachment_id):
+    from models import UserAttachment
+    import os
+    
+    attach = UserAttachment.query.get_or_404(attachment_id)
+    if attach.user_id != current_user.id:
+        return "Unauthorized", 403
+
+    filepath = os.path.join(current_app.root_path, attach.file_url.lstrip('/'))
+    if os.path.exists(filepath):
+        try:
+            os.remove(filepath)
+        except:
+            pass
+
+    db.session.delete(attach)
+    db.session.commit()
+    flash('Anexo removido.', 'success')
+    return redirect(url_for('user.profile'))

@@ -68,6 +68,10 @@ def update_tax_config(subsite_id):
         end_date_str = request.form.get('end_date')
         expenses_json = request.form.get('expenses_json')
         
+        if not start_date_str or not end_date_str:
+            flash('Erro: Você deve preencher os campos de data (Início e Fim) para salvar a taxa variável.', 'error')
+            return redirect(url_for('master.manage_subsites'))
+
         try:
             expenses = json.loads(expenses_json)
             total_expenses = sum(float(e['value']) for e in expenses)
