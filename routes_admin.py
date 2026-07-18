@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash, session, current_app
+from flask import Blueprint, render_template, redirect, url_for, request, flash, session, current_app, abort
 from flask_login import login_required, current_user
 from models import Order, Item, Subsite, Status, User, Store, Sector, OrderItem, get_sp_time
 from database import db
@@ -9,12 +9,27 @@ from werkzeug.utils import secure_filename
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
+def get_current_admin_subsite_id():
+    subsite_id = current_user.subsite_id
+    if current_user.role == 'admin_master':
+        subsite_id = session.get('master_subsite_id')
+    return subsite_id
+
 @admin_bp.before_request
 @login_required
 def require_admin():
     if current_user.role not in ['admin', 'admin_master']:
         flash('Acesso negado.', 'error')
         return redirect(url_for('index'))
+
+    # CSRF Verification via Origin/Referer headers for state-changing methods
+    if request.method in ['POST', 'PUT', 'DELETE', 'PATCH']:
+        origin = request.headers.get('Origin') or request.headers.get('Referer')
+        if origin:
+            parsed_origin = urllib.parse.urlparse(origin)
+            parsed_host = urllib.parse.urlparse(request.host_url)
+            if parsed_origin.netloc != parsed_host.netloc:
+                abort(400, "CSRF verification failed: Origin/Referer mismatch.")
 
     if current_user.role == 'admin':
         allowed_ids = [s.id for s in current_user.managed_subsites]
@@ -86,6 +101,8 @@ def orders():
 @admin_bp.route('/order/<int:order_id>/update_status', methods=['POST'])
 def update_status(order_id):
     order = Order.query.get_or_404(order_id)
+    if order.subsite_id != get_current_admin_subsite_id():
+        abort(403)
     new_status_id = request.form.get('status_id')
     
     if new_status_id:
@@ -98,6 +115,8 @@ def update_status(order_id):
 @admin_bp.route('/order/<int:order_id>/details')
 def order_details(order_id):
     order = Order.query.get_or_404(order_id)
+    if order.subsite_id != get_current_admin_subsite_id():
+        abort(403)
     statuses = Status.query.all()
     sectors = Sector.query.all()
     
@@ -109,6 +128,8 @@ def order_details(order_id):
 @admin_bp.route('/order/<int:order_id>/delete', methods=['POST'])
 def delete_order(order_id):
     order = Order.query.get_or_404(order_id)
+    if order.subsite_id != get_current_admin_subsite_id():
+        abort(403)
     
     # Capture state BEFORE delete
     subsite_id = order.subsite_id
@@ -566,8 +587,15 @@ def edit_item(item_id):
     return render_template('admin_item_edit.html', item=item, stores=stores)
 
 @admin_bp.route('/item/<int:item_id>/delete', methods=['POST'])
+@login_required
 def delete_item(item_id):
     item = Item.query.get_or_404(item_id)
+    
+    subsite_id = get_current_admin_subsite_id()
+    item_store = Store.query.get(item.store_id)
+    if not item_store or item_store.subsite_id != subsite_id:
+        abort(403)
+        
     db.session.delete(item)
     db.session.commit()
     flash('Item excluído com sucesso.', 'success')
@@ -592,6 +620,9 @@ def toggle_item(item_id):
 
 @admin_bp.route('/order/<int:order_id>/configure-item/<int:item_id>', methods=['GET'])
 def configure_order_item(order_id, item_id):
+    order = Order.query.get_or_404(order_id)
+    if order.subsite_id != get_current_admin_subsite_id():
+        abort(403)
     import json
     # Optional: order_item_id if editing existing
     order_item_id = request.args.get('order_item_id', type=int)
@@ -625,6 +656,8 @@ def save_order_item_admin():
     subitems_choice = request.form.get('subitems_choice', '')
     
     order = Order.query.get_or_404(order_id)
+    if order.subsite_id != get_current_admin_subsite_id():
+        abort(403)
     item = Item.query.get_or_404(item_id)
     
     subitems_data = None
@@ -706,6 +739,9 @@ def recalculate_order_totals(order_id):
 
 @admin_bp.route('/order/<int:order_id>/item/<int:item_id>/delete', methods=['POST'])
 def delete_order_item(order_id, item_id):
+    order = Order.query.get_or_404(order_id)
+    if order.subsite_id != get_current_admin_subsite_id():
+        abort(403)
     order_item = OrderItem.query.get_or_404(item_id)
     if order_item.order_id != order_id:
         flash('Erro de integridade.', 'error')
@@ -723,6 +759,8 @@ def delete_order_item(order_id, item_id):
 @admin_bp.route('/order/<int:order_id>/update_metadata', methods=['POST'])
 def update_order_metadata(order_id):
     order = Order.query.get_or_404(order_id)
+    if order.subsite_id != get_current_admin_subsite_id():
+        abort(403)
     
     order.status_id = int(request.form.get('status_id'))
     order.payment_status = request.form.get('payment_status')
@@ -786,10 +824,15 @@ def efi_config_save():
         file = request.files['efi_cert_file']
         if file and file.filename:
             filename = secure_filename(file.filename)
-            certs_dir = os.path.join(current_app.root_path, 'certs')
-            os.makedirs(certs_dir, exist_ok=True)
-            file.save(os.path.join(certs_dir, filename))
-            subsite.efi_cert_name = filename
+            ext = os.path.splitext(filename)[1].lower()
+            if ext in ['.pem', '.crt']:
+                certs_dir = os.path.join(current_app.root_path, 'certs')
+                os.makedirs(certs_dir, exist_ok=True)
+                file.save(os.path.join(certs_dir, filename))
+                subsite.efi_cert_name = filename
+            else:
+                flash('Apenas extensões .pem ou .crt são aceitas para certificados.', 'error')
+                return redirect(url_for('admin.efi_config'))
             
     db.session.commit()
     flash('Configurações EFí salvas com sucesso.', 'success')
@@ -874,6 +917,10 @@ def scraper_run():
     store_id = request.form.get('store_id')
     store = Store.query.get_or_404(store_id)
     
+    subsite_id = get_current_admin_subsite_id()
+    if store.subsite_id != subsite_id:
+        abort(403)
+        
     # Queue the job for local worker
     store.scraper_status = 'pending'
     db.session.commit()
@@ -882,12 +929,17 @@ def scraper_run():
     return redirect(url_for('admin.scraper', store_id=store.id))
 
 @admin_bp.route('/scraper/schedule', methods=['POST'])
+@login_required
 def scraper_schedule():
     from services.scraper_manager import ScraperManager
     
     store_id = request.form.get('store_id')
     store = Store.query.get_or_404(store_id)
     
+    subsite_id = get_current_admin_subsite_id()
+    if store.subsite_id != subsite_id:
+        abort(403)
+        
     config = store.scraper_config or {}
     
     config['url'] = request.form.get('url')

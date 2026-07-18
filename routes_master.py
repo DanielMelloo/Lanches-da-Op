@@ -1,7 +1,8 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, session
+from flask import Blueprint, render_template, redirect, url_for, flash, request, session, abort
 from flask_login import login_required, current_user
 from models import Subsite, User, Order, Status, db
 from werkzeug.security import generate_password_hash
+import urllib.parse
 
 master_bp = Blueprint('master', __name__, url_prefix='/master')
 
@@ -11,6 +12,16 @@ def require_master(f):
         if current_user.role != 'admin_master':
             flash('Acesso restrito a Master Admin.', 'error')
             return redirect(url_for('index'))
+            
+        # CSRF Verification via Origin/Referer headers for state-changing methods
+        if request.method in ['POST', 'PUT', 'DELETE', 'PATCH']:
+            origin = request.headers.get('Origin') or request.headers.get('Referer')
+            if origin:
+                parsed_origin = urllib.parse.urlparse(origin)
+                parsed_host = urllib.parse.urlparse(request.host_url)
+                if parsed_origin.netloc != parsed_host.netloc:
+                    abort(400, "CSRF verification failed: Origin/Referer mismatch.")
+                    
         return f(*args, **kwargs)
     decorated.__name__ = f.__name__
     return decorated

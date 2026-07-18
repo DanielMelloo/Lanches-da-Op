@@ -41,6 +41,9 @@ def create_app():
     from datetime import timedelta
     app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=30)
     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+    app.config['SESSION_COOKIE_HTTPONLY'] = True
+    app.config['SESSION_COOKIE_SECURE'] = not app.debug
 
     init_db(app)
     login_manager.init_app(app)
