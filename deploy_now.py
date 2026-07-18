@@ -2,7 +2,7 @@ import subprocess
 import os
 
 def deploy():
-    key_path = os.path.join(os.path.expanduser('~'), '.ssh', 'Keyzinha.pem')
+    key_path = os.path.join(os.path.expanduser('~'), '.ssh', 'shark-note')
     
     ssh_cmd = [
         "ssh", 

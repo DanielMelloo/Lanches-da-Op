@@ -372,15 +372,33 @@ def checkout(subsite_id):
     pass
     
     if request.method == 'POST':
+        # Check caixinha limits (items only)
+        if subsite.caixinha_active and subsite.caixinha_limit_active:
+            if subsite.caixinha_limit_value > 0 and total_items > subsite.caixinha_limit_value:
+                flash(f'Pedido excede o limite de valor da caixinha (máximo R$ {subsite.caixinha_limit_value:.2f}). Seu pedido soma R$ {total_items:.2f} em itens.', 'error')
+                return redirect(url_for('user.checkout', subsite_id=subsite_id))
+            
+            total_qty = sum(cart_item['qty'] for cart_item in items_in_cart)
+            if subsite.caixinha_limit_quantity > 0 and total_qty > subsite.caixinha_limit_quantity:
+                flash(f'Pedido excede o limite de quantidade de itens da caixinha (máximo {subsite.caixinha_limit_quantity} itens). Seu pedido tem {total_qty} itens.', 'error')
+                return redirect(url_for('user.checkout', subsite_id=subsite_id))
+
         sector_id = request.form.get('sector_id')
         
-        # Determine initial status based on payment requirement
-        if subsite.require_payment:
-            # Payment required → start as Pagamento Pendente
-            initial_status = Status.query.filter_by(name='Pagamento Pendente').first()
+        # Determine initial status and payment status
+        if subsite.caixinha_active:
+            initial_status = Status.query.filter_by(name='Confirmado').first()
+            payment_required = False
+            payment_status = 'approved'
         else:
-            # No payment required → start as Pedido Confirmado
-            initial_status = Status.query.filter_by(name='Pedido Confirmado').first()
+            payment_required = subsite.require_payment
+            payment_status = 'pending'
+            if subsite.require_payment:
+                # Payment required → start as Pagamento Pendente
+                initial_status = Status.query.filter_by(name='Pagamento Pendente').first()
+            else:
+                # No payment required → start as Pedido Confirmado
+                initial_status = Status.query.filter_by(name='Pedido Confirmado').first()
         
         # Fallback to first status if named statuses don't exist
         if not initial_status:
@@ -404,7 +422,8 @@ def checkout(subsite_id):
             tax_fixed=tax_value, # Storing the calculated tax (fixed or variable) here
             service_fee=service_fee,
             total_general=total_general,
-            payment_required=subsite.require_payment
+            payment_required=payment_required,
+            payment_status=payment_status
         )
         db.session.add(new_order)
         db.session.flush()
@@ -425,7 +444,7 @@ def checkout(subsite_id):
         # ------------------------------------------------------------------
         # PAYMENT INTEGRATION (EFí)
         # ------------------------------------------------------------------
-        if subsite.require_payment:
+        if payment_required:
             try:
                 db.session.refresh(new_order) # Ensure relationships are loaded
                 

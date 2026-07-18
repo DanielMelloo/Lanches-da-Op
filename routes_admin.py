@@ -944,6 +944,45 @@ def update_payment_settings():
         
     return redirect(url_for('admin.dashboard'))
 
+@admin_bp.route('/settings/caixinha', methods=['POST'])
+@login_required
+def update_caixinha_settings():
+    if current_user.role not in ['admin', 'admin_master']:
+        return redirect(url_for('index'))
+        
+    subsite_id = current_user.subsite_id
+    if current_user.role == 'admin_master':
+        subsite_id = session.get('master_subsite_id')
+        
+    subsite = Subsite.query.get_or_404(subsite_id)
+    
+    action = request.form.get('action')
+    
+    if action == 'toggle_caixinha':
+        subsite.caixinha_active = not subsite.caixinha_active
+        db.session.commit()
+        flash(f'Modo Caixinha {"ATIVADO" if subsite.caixinha_active else "DESATIVADO"}.', 'success')
+        
+    elif action == 'toggle_caixinha_limit':
+        subsite.caixinha_limit_active = not subsite.caixinha_limit_active
+        db.session.commit()
+        flash(f'Limites da Caixinha {"ATIVADOS" if subsite.caixinha_limit_active else "DESATIVADOS"}.', 'success')
+        
+    elif action == 'update_caixinha_limits':
+        try:
+            val_str = request.form.get('caixinha_limit_value', '0').replace(',', '.')
+            subsite.caixinha_limit_value = float(val_str) if val_str else 0.0
+            
+            qty_str = request.form.get('caixinha_limit_quantity', '0')
+            subsite.caixinha_limit_quantity = int(qty_str) if qty_str else 0
+            
+            db.session.commit()
+            flash('Limites da Caixinha atualizados com sucesso!', 'success')
+        except ValueError:
+            flash('Valores inválidos para os limites.', 'error')
+            
+    return redirect(url_for('admin.dashboard'))
+
 @admin_bp.route('/settings/tax_goal', methods=['POST'])
 @login_required
 def update_tax_goal():

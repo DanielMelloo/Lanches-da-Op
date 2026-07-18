@@ -35,6 +35,12 @@ class Subsite(db.Model):
     temp_open_until = db.Column(db.DateTime) # Temporal extension
     auto_send_whatsapp = db.Column(db.Boolean, default=True) # Global Auto-Dispatch toggle
     
+    # Caixinha Settings
+    caixinha_active = db.Column(db.Boolean, default=False)
+    caixinha_limit_active = db.Column(db.Boolean, default=False)
+    caixinha_limit_value = db.Column(db.Float, default=0.0)
+    caixinha_limit_quantity = db.Column(db.Integer, default=0)
+    
     # Relationships
     users = db.relationship('User', backref='subsite', lazy=True)
     stores = db.relationship('Store', backref='subsite', lazy=True)

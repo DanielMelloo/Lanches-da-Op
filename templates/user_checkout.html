@@ -110,6 +110,27 @@
         <!-- Summary -->
         <div class="glass-panel">
             <h3 class="mb-md"><i class="ph ph-receipt"></i> Resumo</h3>
+            
+            {% if subsite.caixinha_active %}
+            <div style="margin-bottom: var(--spacing-md); padding: 12px 15px; border-radius: var(--radius-sm); font-size: 0.9em; display: flex; align-items: center; gap: 10px; background: rgba(0, 200, 83, 0.1); border: 1px solid rgba(0, 200, 83, 0.2); color: #00C853;">
+                <i class="ph ph-piggy-bank" style="font-size: 1.3em;"></i>
+                <div>
+                    <strong style="display: block;">Modo Caixinha Ativo</strong>
+                    <span class="text-muted" style="font-size: 0.9em; display: block; margin-top: 2px;">Pagamento isento. O custo será debitado do caixa coletivo.</span>
+                    {% if subsite.caixinha_limit_active %}
+                        <div style="color: var(--accent-yellow); font-size: 0.95em; margin-top: 4px; display: flex; align-items: center; gap: 6px;">
+                            <i class="ph ph-warning-circle" style="font-size: 1.1em;"></i>
+                            <span>Limites: 
+                                {% if subsite.caixinha_limit_value > 0 %}máx R$ {{ "%.2f"|format(subsite.caixinha_limit_value) }}{% endif %}
+                                {% if subsite.caixinha_limit_value > 0 and subsite.caixinha_limit_quantity > 0 %} | {% endif %}
+                                {% if subsite.caixinha_limit_quantity > 0 %}máx {{ subsite.caixinha_limit_quantity }} itens{% endif %}
+                            </span>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
             <div class="flex flex-col gap-xs mb-md text-muted">
                 <div class="flex justify-between">
                     <span>Subtotal Itens:</span>
@@ -155,7 +176,13 @@
     <div class="glass-panel text-center animate-zoom-in" style="padding: 40px; width: 90%; max-width: 400px;">
         <i class="ph ph-spinner-gap animate-spin" style="font-size: 3rem; color: var(--accent-cyan);"></i>
         <p class="text-accent font-bold text-lg mt-md">Processando Pedido...</p>
-        <p class="text-muted text-sm mt-xs">Aguarde, gerando pagamento...</p>
+        <p class="text-muted text-sm mt-xs">
+            {% if subsite.caixinha_active %}
+                Aguarde, confirmando seu pedido...
+            {% else %}
+                Aguarde, gerando pagamento...
+            {% endif %}
+        </p>
     </div>
 </div>
 

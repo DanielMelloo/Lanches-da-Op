@@ -145,6 +145,28 @@ def create_app():
             except Exception as e:
                 return f"Error updating schema: {e}"
 
+    @app.route('/fix_schema_caixinha')
+    def fix_schema_caixinha():
+        with app.app_context():
+            try:
+                with db.engine.connect() as conn:
+                    cols = [
+                        "caixinha_active BOOLEAN DEFAULT 0",
+                        "caixinha_limit_active BOOLEAN DEFAULT 0",
+                        "caixinha_limit_value FLOAT DEFAULT 0.0",
+                        "caixinha_limit_quantity INT DEFAULT 0"
+                    ]
+                    for col in cols:
+                        try:
+                            # Use text() to bind string properly in 2.0+
+                            conn.execute(db.text(f"ALTER TABLE subsites ADD COLUMN {col};"))
+                        except Exception as e:
+                            print(f"Col exists or error: {e}")
+                db.session.commit()
+                return "Schema updated for Caixinha settings."
+            except Exception as e:
+                return f"Error updating schema: {e}"
+
     @app.route('/')
     def index():
         if current_user.is_authenticated:
