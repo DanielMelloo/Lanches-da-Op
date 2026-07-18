@@ -512,263 +512,401 @@ block content %}
   {% endif %}
 </div>
 
-<!-- TEMPLATE EDITOR MODAL -->
+<!-- TEMPLATE MANAGER MODAL (TABLE OF AVAILABLE TEMPLATES) -->
 <div id="templateModalOverlay" class="modal-overlay">
-  <div class="modal-content" style="max-width: 950px; width: 95%;">
-    <form
-      method="POST"
-      id="templateForm"
-      style="display: flex; flex-direction: column; height: 100%"
-    >
-      <input type="hidden" name="store_id" id="modalStoreId" />
+  <div class="modal-content" style="max-width: 900px; width: 95%;">
+    <div class="modal-header">
+      <div>
+        <h3 id="modalStoreName">Modelos de Mensagem</h3>
+        <small style="color: #666">Gerencie e ative os templates de WhatsApp desta loja</small>
+      </div>
+      <button
+        type="button"
+        class="modal-close"
+        onclick="closeTemplateEditor()"
+      >
+        &times;
+      </button>
+    </div>
 
-      <div class="modal-header">
+    <div class="modal-body" style="display: flex; flex-direction: column; gap: 15px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
+        <span style="color: var(--text-muted); font-size: 0.9em;">Selecione qual modelo de mensagem será enviado por esta loja:</span>
+        <button type="button" class="btn-neon" onclick="openPresetSubModal()" style="font-size: 0.8em; padding: 6px 15px; height: 35px; border-radius: 6px; background: rgba(0, 212, 255, 0.1); color: var(--accent-cyan); border-color: rgba(0, 212, 255, 0.2); cursor: pointer;">
+          <i class="ph ph-plus-circle"></i> Criar Novo Modelo
+        </button>
+      </div>
+
+      <div style="max-height: 250px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; background: rgba(0,0,0,0.15);">
+        <table style="width: 100%; border-collapse: collapse; color: white;">
+          <thead>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 0.8em; text-transform: uppercase; color: #888; background: rgba(0,0,0,0.1);">
+              <th style="padding: 10px; text-align: left;">Nome do Modelo (Clique para renomear)</th>
+              <th style="padding: 10px; text-align: center; width: 120px;">Status</th>
+              <th style="padding: 10px; text-align: right; width: 180px;">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="presetsTableBody">
+            <!-- JS Populated -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Preview of Active Template -->
+      <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 15px; display: flex; flex-direction: column;">
+        <label style="font-size: 0.75rem; color: #666; display: block; margin-bottom: 8px; font-weight: bold; text-transform: uppercase;">PREVIEW DO MODELO ATIVO:</label>
+        <div style="background-color: #0b141a; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.08); padding: 20px; min-height: 180px; max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; background-image: linear-gradient(rgba(11, 20, 26, 0.95), rgba(11, 20, 26, 0.95)); box-shadow: inset 0 0 30px rgba(0,0,0,0.5);">
+          <div id="activeWhatsappPreview" style="background-color: #005c4b; color: #e9edef; padding: 10px 14px; border-radius: 8px 8px 0px 8px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 0.85em; line-height: 1.45; white-space: pre-wrap; word-break: break-word; margin-left: auto; max-width: 90%; min-width: 150px; min-height: 50px; box-shadow: 0 1px 0.5px rgba(0,0,0,0.13);">
+            <!-- Active message preview -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer" style="padding-top: 15px;">
+      <button
+        type="button"
+        class="btn-secondary"
+        onclick="closeTemplateEditor()"
+        style="min-width: 100px;"
+      >
+        Fechar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- TEMPLATE CREATION/EDITION SUB-MODAL -->
+<div id="presetSubModalOverlay" class="modal-overlay" style="z-index: 10005; display: none; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); justify-content: center; align-items: center;">
+  <div class="modal-content" style="max-width: 900px; width: 95%; max-height: 90vh;">
+    <div class="modal-header">
+      <div>
+        <h3 id="subModalTitle">Criar Modelo</h3>
+        <small style="color: #666">Personalize os detalhes e o texto da mensagem</small>
+      </div>
+      <button type="button" class="modal-close" onclick="closePresetSubModal()">&times;</button>
+    </div>
+
+    <div class="modal-body" style="display: flex; gap: 20px; flex-wrap: wrap;">
+      <!-- Left: Editor (60%) -->
+      <div style="flex: 1.3; min-width: 320px; display: flex; flex-direction: column; gap: 15px;">
         <div>
-          <h3 id="modalStoreName">Configurar Mensagem</h3>
-          <small style="color: #666"
-            >Personalize a mensagem enviada pelo bot</small
-          >
+          <label style="font-size: 0.75rem; color: #888; display: block; margin-bottom: 5px;">NOME DO MODELO:</label>
+          <input type="text" id="subModalName" class="inline-input" placeholder="Ex: Confirmação de Pedido" style="width: 100%; border: 1px solid rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 6px; background: rgba(0,0,0,0.2); color: white;">
         </div>
-        <button
-          type="button"
-          class="modal-close"
-          onclick="closeTemplateEditor()"
-        >
-          &times;
-        </button>
-      </div>
 
-      <div class="modal-body" style="display: flex; gap: 20px; flex-wrap: wrap;">
-        <!-- Left Side: Editor (width: 58%) -->
-        <div style="flex: 1.3; min-width: 320px; display: flex; flex-direction: column; gap: 15px;">
-          <!-- Presets Control -->
-          <div class="preset-row" style="margin-bottom: 0;">
-            <div style="flex: 1">
-              <label
-                style="
-                  font-size: 0.75rem;
-                  color: #888;
-                  display: block;
-                  margin-bottom: 5px;
-                "
-                >CARREGAR MODELO:</label
-              >
-              <select
-                id="presetSelect"
-                class="inline-input"
-                onchange="applyPreset(this.value)"
-              >
-                <option value="">Selecione um modelo...</option>
-              </select>
-            </div>
-            <div
-              style="
-                padding-left: 15px;
-                border-left: 1px solid rgba(255, 255, 255, 0.1);
-                margin-left: 15px;
-                display: flex;
-                gap: 5px;
-              "
-            >
-              <button
-                type="button"
-                class="btn-secondary"
-                style="font-size: 0.8rem; padding: 5px 12px; height: auto"
-                onclick="saveCurrentAsPreset()"
-                title="Salvar como novo modelo"
-              >
-                <i class="ph ph-floppy-disk"></i>
-              </button>
-              <button
-                type="button"
-                class="btn-secondary"
-                style="font-size: 0.8rem; padding: 5px 12px; height: auto; color: #ff3b30; border-color: rgba(255, 59, 48, 0.3);"
-                onclick="deleteCurrentPreset()"
-                title="Excluir modelo selecionado"
-              >
-                <i class="ph ph-trash"></i>
-              </button>
-            </div>
-          </div>
-
-          <!-- Chips -->
-          <div>
-            <label
-              style="
-                font-size: 0.75rem;
-                color: #666;
-                display: block;
-                margin-bottom: 8px;
-              "
-              >VARIÁVEIS DISPONÍVEIS:</label
-            >
-            <div class="chip-grid">
-              <span class="chip" onclick="insertVal('{saudacao}')">{saudacao}</span>
-              <span class="chip" onclick="insertVal('{cliente}')">{cliente}</span>
-              <span class="chip" onclick="insertVal('{loja}')">{loja}</span>
-              <span class="chip" onclick="insertVal('{itens}')">{itens}</span>
-              <span class="chip" onclick="insertVal('{total}')">{total}</span>
-              <span class="chip" onclick="insertVal('{pagamento}')"
-                >{pagamento}</span
-              >
-              <span class="chip" onclick="insertVal('{endereco}')">{endereco}</span>
-              <span class="chip" onclick="insertVal('{observacao}')"
-                >{observacao}</span
-              >
-              <span
-                class="chip"
-                onclick="insertVal('{resumo_geral}')"
-                style="border-color: var(--accent-cyan); color: var(--accent-cyan)"
-                >{resumo_geral}</span
-              >
-            </div>
-          </div>
-
-          <!-- Editor -->
-          <div>
-            <label
-              style="
-                font-size: 0.75rem;
-                color: #666;
-                display: block;
-                margin-bottom: 8px;
-              "
-              >MENSAGEM:</label
-            >
-            <textarea
-              name="whatsapp_template"
-              id="templateText"
-              style="
-                width: 100%;
-                height: 250px;
-                background: #0b0d11;
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                color: #ddd;
-                padding: 15px;
-                border-radius: 8px;
-                font-family: monospace;
-                line-height: 1.5;
-                resize: none;
-              "
-              placeholder="Olá {cliente}, seu pedido na {loja} foi confirmado!"
-              oninput="updatePreview()"
-            ></textarea>
+        <!-- Chips -->
+        <div>
+          <label style="font-size: 0.75rem; color: #666; display: block; margin-bottom: 8px;">VARIÁVEIS DISPONÍVEIS (Clique para inserir):</label>
+          <div class="chip-grid">
+            <span class="chip" onclick="insertValSub('{saudacao}')">{saudacao}</span>
+            <span class="chip" onclick="insertValSub('{cliente}')">{cliente}</span>
+            <span class="chip" onclick="insertValSub('{loja}')">{loja}</span>
+            <span class="chip" onclick="insertValSub('{itens}')">{itens}</span>
+            <span class="chip" onclick="insertValSub('{total}')">{total}</span>
+            <span class="chip" onclick="insertValSub('{pagamento}')">{pagamento}</span>
+            <span class="chip" onclick="insertValSub('{endereco}')">{endereco}</span>
+            <span class="chip" onclick="insertValSub('{observacao}')">{observacao}</span>
+            <span class="chip" onclick="insertValSub('{resumo_geral}')" style="border-color: var(--accent-cyan); color: var(--accent-cyan)">{resumo_geral}</span>
           </div>
         </div>
 
-        <!-- Right Side: Preview (width: 42%) -->
-        <div style="flex: 1; min-width: 280px; display: flex; flex-direction: column; height: 420px;">
-          <label
-            style="
-              font-size: 0.75rem;
-              color: #666;
-              display: block;
-              margin-bottom: 8px;
-            "
-            >PRÉ-VISUALIZAÇÃO DO WHATSAPP:</label
-          >
-          <div
-            style="
-              background-color: #0b141a;
-              border-radius: 12px;
-              border: 1px solid rgba(255, 255, 255, 0.08);
-              padding: 20px;
-              display: flex;
-              flex-direction: column;
-              flex: 1;
-              overflow-y: auto;
-              background-image: linear-gradient(rgba(11, 20, 26, 0.95), rgba(11, 20, 26, 0.95));
-              box-shadow: inset 0 0 40px rgba(0,0,0,0.5);
-            "
-          >
-            <div
-              id="whatsappPreview"
-              style="
-                background-color: #005c4b;
-                color: #e9edef;
-                padding: 10px 14px;
-                border-radius: 8px 8px 0px 8px;
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-                font-size: 0.85em;
-                line-height: 1.45;
-                white-space: pre-wrap;
-                word-break: break-word;
-                margin-left: auto;
-                max-width: 90%;
-                min-width: 150px;
-                min-height: 50px;
-                box-shadow: 0 1.5px 1px rgba(0,0,0,0.25);
-              "
-            >
-              <!-- Rendered preview content -->
-            </div>
-          </div>
+        <div>
+          <label style="font-size: 0.75rem; color: #666; display: block; margin-bottom: 8px;">MENSAGEM:</label>
+          <textarea id="subModalContent" style="width: 100%; height: 180px; background: #0b0d11; border: 1px solid rgba(255, 255, 255, 0.1); color: #ddd; padding: 15px; border-radius: 8px; font-family: monospace; line-height: 1.5; resize: none;" placeholder="Digite o conteúdo do modelo..." oninput="updateSubModalPreview()"></textarea>
         </div>
       </div>
 
-      <div class="modal-footer">
-        <button
-          type="button"
-          class="btn-secondary"
-          onclick="closeTemplateEditor()"
-          style="margin-right: 10px"
-        >
-          Cancelar
-        </button>
-        <button type="submit" class="btn-primary-modal">Salvar Alterações</button>
+      <!-- Right: Preview (40%) -->
+      <div style="flex: 1; min-width: 280px; display: flex; flex-direction: column; height: 380px;">
+        <label style="font-size: 0.75rem; color: #666; display: block; margin-bottom: 8px;">PRÉ-VISUALIZAÇÃO DO MODELO:</label>
+        <div style="background-color: #0b141a; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.08); padding: 20px; display: flex; flex-direction: column; flex: 1; overflow-y: auto; background-image: linear-gradient(rgba(11, 20, 26, 0.95), rgba(11, 20, 26, 0.95)); box-shadow: inset 0 0 40px rgba(0,0,0,0.5);">
+          <div id="subModalPreview" style="background-color: #005c4b; color: #e9edef; padding: 10px 14px; border-radius: 8px 8px 0px 8px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 0.85em; line-height: 1.45; white-space: pre-wrap; word-break: break-word; margin-left: auto; max-width: 90%; min-width: 150px; min-height: 50px; box-shadow: 0 1px 0.5px rgba(0,0,0,0.13);">
+            <!-- Live Preview -->
+          </div>
+        </div>
       </div>
-    </form>
+    </div>
+
+    <div class="modal-footer" style="padding-top: 15px;">
+      <button type="button" class="btn-secondary" onclick="closePresetSubModal()" style="margin-right: 10px;">Cancelar</button>
+      <button type="button" class="btn-primary-modal" onclick="savePresetFromSubModal()">Salvar Modelo</button>
+    </div>
   </div>
 </div>
 
 <script>
   // --- Template Editor Logic ---
+  // --- Redesigned Template Manager Logic ---
   const modalOverlay = document.getElementById("templateModalOverlay");
-  const modalStoreId = document.getElementById("modalStoreId");
   const modalStoreName = document.getElementById("modalStoreName");
-  const templateText = document.getElementById("templateText");
-  const presetSelect = document.getElementById("presetSelect");
-
   let presetsData = [];
+  let currentStoreId = null;
+  let currentStoreActiveTemplate = null;
+  let currentEditingPresetId = null;
+  let hasChanged = false;
 
-  function openTemplateEditor(id, name, currentContent) {
-    modalStoreId.value = id;
-    modalStoreName.textContent = "Mensagem: " + name;
-    templateText.value = currentContent;
+  async function openTemplateEditor(id, name, currentActiveTemplate) {
+    currentStoreId = id;
+    currentStoreActiveTemplate = currentActiveTemplate;
+    hasChanged = false;
+    modalStoreName.textContent = "Modelos de Mensagem: " + name;
 
     modalOverlay.style.display = "flex";
     setTimeout(() => modalOverlay.classList.add("active"), 10);
-    loadPresetsAJAX();
-    updatePreview();
+    
+    await loadPresetsAJAX();
+    loadPresetsList();
+    updateActivePreview();
   }
 
   function closeTemplateEditor() {
-    modalOverlay.classList.remove("active");
-    setTimeout(() => (modalOverlay.style.display = "none"), 300);
+    if (hasChanged) {
+        // Reload to sync stores table in parent view
+        window.location.reload();
+    } else {
+        modalOverlay.classList.remove("active");
+        setTimeout(() => (modalOverlay.style.display = "none"), 300);
+    }
   }
 
-  function insertVal(val) {
-    const start = templateText.selectionStart;
-    const end = templateText.selectionEnd;
-    const text = templateText.value;
-    templateText.value = text.substring(0, start) + val + text.substring(end);
-    templateText.focus();
-    templateText.selectionStart = templateText.selectionEnd =
-      start + val.length;
-    updatePreview();
+  async function loadPresetsAJAX() {
+    try {
+      const res = await fetch("/admin/templates/list?t=" + Date.now());
+      const data = await res.json();
+      presetsData = data.presets || [];
+    } catch (e) {
+      console.error("Erro ao listar presets:", e);
+    }
   }
 
-  // --- WhatsApp Live Preview ---
-  function updatePreview() {
-    const text = templateText.value;
-    const preview = document.getElementById("whatsappPreview");
+  function loadPresetsList() {
+    const tableBody = document.getElementById("presetsTableBody");
+    tableBody.innerHTML = "";
     
-    if (!text.trim()) {
-      preview.innerHTML = '<span style="color: rgba(255,255,255,0.4); font-style: italic;">Digite seu modelo para ver o preview...</span>';
+    if (presetsData.length === 0) {
+      tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:20px; color:#888;">Nenhum modelo cadastrado para este subsite.</td></tr>`;
+      return;
+    }
+
+    presetsData.forEach((p) => {
+      const isActive = (p.content === currentStoreActiveTemplate);
+      const tr = document.createElement("tr");
+      tr.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
+      tr.style.fontSize = "0.95em";
+      if (isActive) {
+        tr.style.backgroundColor = "rgba(40, 167, 69, 0.05)";
+        tr.style.borderLeft = "4px solid #28a745";
+      } else {
+        tr.style.borderLeft = "4px solid transparent";
+      }
+
+      tr.innerHTML = `
+        <td style="padding: 10px 12px; vertical-align: middle;">
+          <input type="text" class="inline-input" value="${escapeHTML(p.name)}" 
+                 onchange="renamePreset(${p.id}, this.value)" 
+                 style="background: transparent; border: 1px solid transparent; color: white; width: 100%; padding: 6px 10px; border-radius: 4px; font-weight: 500;"
+                 onfocus="this.style.border='1px solid rgba(0, 212, 255, 0.3)'; this.style.background='rgba(0,0,0,0.2)';"
+                 onblur="this.style.border='1px solid transparent'; this.style.background='transparent';">
+        </td>
+        <td style="padding: 10px 12px; text-align: center; vertical-align: middle;">
+          ${isActive ? 
+            `<button type="button" style="background-color: #28a745; color: white; border: none; font-weight: bold; border-radius: 4px; padding: 6px 12px; font-size: 0.85em; width: 85px; cursor: default; box-shadow: 0 0 10px rgba(40,167,69,0.3);">Ativo</button>` : 
+            `<button type="button" onclick="activatePresetForStore(${p.id})" style="background-color: #dc3545; color: white; border: none; font-weight: bold; border-radius: 4px; padding: 6px 12px; font-size: 0.85em; width: 85px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.backgroundColor='#bd2130'" onmouseout="this.style.backgroundColor='#dc3545'">Ativar</button>`
+          }
+        </td>
+        <td style="padding: 10px 12px; text-align: right; vertical-align: middle; white-space: nowrap;">
+          <div style="display: flex; gap: 8px; justify-content: flex-end;">
+            <button type="button" class="btn-secondary" onclick="openPresetSubModal(${p.id})" style="font-size: 0.8em; padding: 5px 10px; height: auto;">
+              <i class="ph ph-pencil-simple"></i> Editar
+            </button>
+            <button type="button" class="btn-secondary" onclick="deletePresetFromList(${p.id})" style="font-size: 0.8em; padding: 5px 8px; height: auto; color: #ff3b30; border-color: rgba(255, 59, 48, 0.2);">
+              <i class="ph ph-trash"></i>
+            </button>
+          </div>
+        </td>
+      `;
+      tableBody.appendChild(tr);
+    });
+  }
+
+  async function renamePreset(presetId, newName) {
+    if (!newName.trim()) return alert("O nome do modelo não pode ser vazio.");
+    const preset = presetsData.find(p => p.id === presetId);
+    if (!preset) return;
+    
+    try {
+      const res = await fetch("/admin/templates/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: presetId, name: newName, content: preset.content })
+      });
+      const d = await res.json();
+      if (d.success) {
+        preset.name = newName;
+      } else {
+        alert("Erro ao renomear: " + d.error);
+        loadPresetsList();
+      }
+    } catch (e) {
+      alert("Erro de conexão");
+      loadPresetsList();
+    }
+  }
+
+  async function activatePresetForStore(presetId) {
+    const preset = presetsData.find(p => p.id === presetId);
+    if (!preset) return;
+    
+    try {
+      const res = await fetch(`/admin/stores/${currentStoreId}/activate-template`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: preset.content })
+      });
+      const d = await res.json();
+      if (d.success) {
+        currentStoreActiveTemplate = preset.content;
+        hasChanged = true;
+        loadPresetsList();
+        updateActivePreview();
+      } else {
+        alert("Erro ao ativar template: " + d.error);
+      }
+    } catch (e) {
+      alert("Erro de conexão");
+    }
+  }
+
+  // --- Sub Modal (Create/Edit Preset) Logic ---
+  function openPresetSubModal(presetId = null) {
+    currentEditingPresetId = presetId;
+    const subModal = document.getElementById("presetSubModalOverlay");
+    const titleEl = document.getElementById("subModalTitle");
+    const nameInp = document.getElementById("subModalName");
+    const contentInp = document.getElementById("subModalContent");
+    
+    if (presetId) {
+      titleEl.textContent = "Editar Modelo";
+      const p = presetsData.find(x => x.id === presetId);
+      if (p) {
+        nameInp.value = p.name;
+        contentInp.value = p.content;
+      }
+    } else {
+      titleEl.textContent = "Criar Modelo";
+      nameInp.value = "";
+      contentInp.value = "";
+    }
+    
+    subModal.style.display = "flex";
+    setTimeout(() => subModal.classList.add("active"), 10);
+    updateSubModalPreview();
+  }
+
+  function closePresetSubModal() {
+    const subModal = document.getElementById("presetSubModalOverlay");
+    subModal.classList.remove("active");
+    setTimeout(() => (subModal.style.display = "none"), 300);
+  }
+
+  function insertValSub(val) {
+    const textarea = document.getElementById("subModalContent");
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    textarea.value = text.substring(0, start) + val + text.substring(end);
+    textarea.focus();
+    textarea.selectionStart = textarea.selectionEnd = start + val.length;
+    updateSubModalPreview();
+  }
+
+  async function savePresetFromSubModal() {
+    const name = document.getElementById("subModalName").value;
+    const content = document.getElementById("subModalContent").value;
+    
+    if (!name.trim()) return alert("Por favor, preencha o nome do modelo.");
+    if (!content.trim()) return alert("Por favor, preencha o conteúdo da mensagem.");
+    
+    try {
+      const res = await fetch("/admin/templates/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: currentEditingPresetId, name, content })
+      });
+      const d = await res.json();
+      if (d.success) {
+        alert("Modelo salvo com sucesso!");
+        closePresetSubModal();
+        await loadPresetsAJAX();
+        
+        // If we edited the active template, update currentStoreActiveTemplate
+        if (currentEditingPresetId && currentEditingPresetId === presetsData.find(x => x.content === currentStoreActiveTemplate)?.id) {
+            currentStoreActiveTemplate = content;
+            hasChanged = true;
+        }
+        
+        loadPresetsList();
+        updateActivePreview();
+      } else {
+        alert("Erro ao salvar: " + d.error);
+      }
+    } catch (e) {
+      alert("Erro de conexão");
+    }
+  }
+
+  async function deletePresetFromList(presetId) {
+    if (!confirm("Excluir definitivamente este modelo?")) return;
+    try {
+      const res = await fetch(`/admin/templates/${presetId}`, {
+        method: "DELETE"
+      });
+      const d = await res.json();
+      if (d.success) {
+        alert("Modelo excluído.");
+        await loadPresetsAJAX();
+        loadPresetsList();
+        updateActivePreview();
+      } else {
+        alert("Erro ao excluir: " + d.error);
+      }
+    } catch (e) {
+      alert("Erro de conexão");
+    }
+  }
+
+  // --- Live Previews ---
+  function updateActivePreview() {
+    const preview = document.getElementById("activeWhatsappPreview");
+    if (!currentStoreActiveTemplate || !currentStoreActiveTemplate.trim()) {
+      preview.innerHTML = '<span style="color: rgba(255,255,255,0.4); font-style: italic;">Nenhum modelo personalizado ativo. A loja usará o template padrão de contingência do centralizador Lanches OP.</span>';
+      preview.style.backgroundColor = 'transparent';
+      preview.style.boxShadow = 'none';
+      preview.style.marginLeft = '0';
       return;
     }
     
-    // Mock Values for Preview
+    preview.style.backgroundColor = '#005c4b';
+    preview.style.boxShadow = '0 1.5px 1px rgba(0,0,0,0.25)';
+    preview.style.marginLeft = 'auto';
+    
+    preview.innerHTML = formatTemplateText(currentStoreActiveTemplate);
+  }
+
+  function updateSubModalPreview() {
+    const text = document.getElementById("subModalContent").value;
+    const preview = document.getElementById("subModalPreview");
+    
+    if (!text.trim()) {
+      preview.innerHTML = '<span style="color: rgba(255,255,255,0.4); font-style: italic;">Digite o conteúdo do modelo...</span>';
+      return;
+    }
+    
+    preview.innerHTML = formatTemplateText(text);
+  }
+
+  function formatTemplateText(text) {
     const mocks = {
       '{saudacao}': 'Boa tarde',
       '{cliente}': 'Daniel Mello',
@@ -789,18 +927,17 @@ block content %}
       rendered = rendered.replaceAll(key, val);
     }
     
-    // Escape HTML to prevent injection, then format markdown
     rendered = escapeHTML(rendered);
     
-    // WhatsApp Markdown Formatting
+    // WhatsApp Markdown
     rendered = rendered.replace(/\*(.*?)\*/g, '<strong>$1</strong>');
     rendered = rendered.replace(/_(.*?)_/g, '<em>$1</em>');
     rendered = rendered.replace(/~(.*?)~/g, '<del>$1</del>');
     rendered = rendered.replace(/```(.*?)```/gs, '<code>$1</code>');
     
-    preview.innerHTML = rendered;
+    return rendered;
   }
-  
+
   function escapeHTML(str) {
     return str.replace(/[&<>'"]/g, 
       tag => ({
@@ -813,84 +950,7 @@ block content %}
     );
   }
 
-  // --- Presets ---
-  async function loadPresetsAJAX() {
-    try {
-      const res = await fetch("/admin/templates/list?t=" + Date.now());
-      const data = await res.json();
-      presetsData = data.presets || [];
 
-      presetSelect.innerHTML =
-        '<option value="">Carregar um modelo...</option>';
-      presetsData.forEach((p) => {
-        const opt = document.createElement("option");
-        opt.value = p.id;
-        opt.textContent = p.name;
-        presetSelect.appendChild(opt);
-      });
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
-  function applyPreset(id) {
-    if (!id) return;
-    const p = presetsData.find((x) => x.id == id);
-    if (p) {
-      if (confirm('Substituir o texto atual pelo modelo "' + p.name + '"?')) {
-        templateText.value = p.content;
-        updatePreview();
-      }
-      presetSelect.value = ""; // Reset
-    }
-  }
-
-  async function saveCurrentAsPreset() {
-    const content = templateText.value;
-    if (!content.trim()) return alert("O modelo está vazio.");
-
-    const name = prompt("Nome do novo modelo (Ex: Promoção Natal):");
-    if (name) {
-      try {
-        const res = await fetch("/admin/templates/save", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, content }),
-        });
-        const d = await res.json();
-        if (d.success) {
-          alert("Modelo salvo!");
-          loadPresetsAJAX();
-        } else {
-          alert("Erro: " + d.error);
-        }
-      } catch (e) {
-        alert("Erro de conexão");
-      }
-    }
-  }
-
-  async function deleteCurrentPreset() {
-      const id = presetSelect.value;
-      if (!id) return alert("Selecione um modelo para excluir.");
-      
-      if (!confirm("Tem certeza que deseja excluir este modelo?")) return;
-      
-      try {
-          const res = await fetch("/admin/templates/" + id, {
-              method: "DELETE"
-          });
-          const d = await res.json();
-          if (d.success) {
-              alert("Modelo excluído.");
-              loadPresetsAJAX();
-          } else {
-              alert("Erro: " + d.error);
-          }
-      } catch (e) {
-          alert("Erro de conexão");
-      }
-  }
 
   function saveStore(id) {
       const name = document.getElementById('name_' + id).value;

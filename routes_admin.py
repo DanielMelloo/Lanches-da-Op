@@ -1132,6 +1132,7 @@ def template_save():
         if not subsite_id: return {'error': 'No subsite'}, 400
     
         data = request.get_json()
+        preset_id = data.get('id')
         name = data.get('name')
         content = data.get('content')
         
@@ -1139,11 +1140,19 @@ def template_save():
             return {'error': 'Missing name or content'}, 400
             
         from models import WhatsappTemplatePreset
-        new_preset = WhatsappTemplatePreset(name=name, content=content, subsite_id=subsite_id)
-        db.session.add(new_preset)
-        db.session.commit()
         
-        return {'success': True, 'id': new_preset.id}
+        if preset_id:
+            preset = WhatsappTemplatePreset.query.get(preset_id)
+            if not preset or preset.subsite_id != subsite_id:
+                return {'error': 'Preset not found'}, 404
+            preset.name = name
+            preset.content = content
+        else:
+            preset = WhatsappTemplatePreset(name=name, content=content, subsite_id=subsite_id)
+            db.session.add(preset)
+            
+        db.session.commit()
+        return {'success': True, 'id': preset.id}
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -1181,6 +1190,30 @@ def template_delete(preset_id):
             return {'error': 'Unauthorized'}, 403
             
         db.session.delete(preset)
+        db.session.commit()
+        return {'success': True}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {'error': str(e)}, 500
+
+@admin_bp.route('/stores/<int:store_id>/activate-template', methods=['POST'])
+@login_required
+def activate_store_template(store_id):
+    try:
+        subsite_id = current_user.subsite_id
+        if current_user.role == 'admin_master':
+             subsite_id = session.get('master_subsite_id')
+        
+        from models import Store
+        store = Store.query.get_or_404(store_id)
+        if store.subsite_id != subsite_id:
+            return {'error': 'Forbidden'}, 403
+            
+        data = request.get_json()
+        template_content = data.get('content')
+        
+        store.whatsapp_template = template_content
         db.session.commit()
         return {'success': True}
     except Exception as e:
