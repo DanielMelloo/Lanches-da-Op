@@ -312,7 +312,7 @@ def run_dispatcher():
                         saudacao = f"{s_txt}! Seguem os pedidos da rodada:"
                         
                         endereco_replan = (
-                            "REPLAN - Refinaria Planalto de Paulínia, SP-332, Km 130 - s/n - Bonfim, Paulínia - SP, 13140-000\n"
+                            "REPLAN - Refinaria Planalto de Paulínia, SP-332, Km 130 - s/n - Bonfim, Paulínia - SP, 13140-000\n\n"
                             "REPLAN - Portaria Sul"
                         )
                         
@@ -389,16 +389,12 @@ def run_dispatcher():
                                     aggregated_items[key] = 0
                                 aggregated_items[key] += it['quantity']
                                 
-                            items_str = ""
+                            items_str = f"{user_name}\n"
                             items_inline_list = []
-                            is_first = True
                             for key, qty in sorted(aggregated_items.items()):
-                                if is_first:
-                                    items_str += f"{user_name}\t{key}\t{qty}"
-                                    is_first = False
-                                else:
-                                    items_str += f"\n\t{key}\t{qty}"
+                                items_str += f"\t{key}\t{qty}\n"
                                 items_inline_list.append(f"{qty}x {key}")
+                            items_str = items_str.rstrip('\n')
                             items_inline_str = " - ".join(items_inline_list)
                             
                             pay_method_str = ", ".join(sorted(list(data['pay_methods'])))
@@ -428,7 +424,7 @@ def run_dispatcher():
                         
                         if current_batch_text:
                             # Assemble Final Message
-                            body_block = "\n".join(current_batch_text)
+                            body_block = "\n\n".join(current_batch_text)
                             
                             parts = []
                             if final_header.strip(): parts.append(final_header)
