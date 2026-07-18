@@ -298,9 +298,14 @@ def run_dispatcher():
                         
                         sorted_orders = sorted(orders_data.items(), key=lambda x: x[0]) 
                         
+                        print(f"[DEBUG] sorted_orders keys: {list(orders_data.keys())} (Types: {[type(k) for k in orders_data.keys()]})")
+                        print(f"[DEBUG] orders_to_mark IDs: {[o.id for o in orders_to_mark]} (Types: {[type(o.id) for o in orders_to_mark]})")
+                        
                         for order_id, items in sorted_orders:
                             order_obj = next((o for o in orders_to_mark if o.id == order_id), None)
-                            if not order_obj: continue
+                            if not order_obj:
+                                print(f"[DEBUG] Skipping order_id {order_id} because it was not found in orders_to_mark!")
+                                continue
 
                             # Aggregate Items
                             aggregated_items = {}
@@ -371,6 +376,7 @@ def run_dispatcher():
                                 operations.append((final_msg, current_batch_ids))
 
                     # Execute Operations
+                    print(f"[DEBUG] operations count to send: {len(operations)}")
                     for text, associated_ids in operations:
                         print(f"Sending to {store.name} ({num})...")
                         try:
