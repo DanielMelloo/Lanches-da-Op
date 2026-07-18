@@ -260,22 +260,34 @@ def run_dispatcher():
                         body_tmpl = "\n".join(body_lines)
                         footer_txt = "\n".join(footer_lines)
 
-                        # Calculate Batch Summary (Resumo Geral)
-                        batch_summary_items = {}
+                        # Calculate Batch Summary (Resumo Geral) grouped by sector
+                        sectors = set()
+                        summary_matrix = {}
                         for order_id_iter, items_iter in orders_data.items():
-                             # Check if order is valid (skip if not in fetch list? No, orders_data is source of truth)
+                             order_obj = next((o for o in orders_to_mark if o.id == order_id_iter), None)
+                             sector_name = order_obj.sector.name if (order_obj and order_obj.sector) else "N/A"
+                             sectors.add(sector_name)
+                             
                              for it in items_iter:
                                  key = it['name']
                                  if it['subitems']: key += f" ({it['subitems']})"
                                  
-                                 if key not in batch_summary_items:
-                                     batch_summary_items[key] = 0
-                                 batch_summary_items[key] += it['quantity']
-                        
-                        batch_summary_lines = []
-                        for key, qty in batch_summary_items.items():
-                            batch_summary_lines.append(f"{qty}x {key}")
-                        batch_summary_str = "\n".join(batch_summary_lines)
+                                 if key not in summary_matrix:
+                                     summary_matrix[key] = {}
+                                 if sector_name not in summary_matrix[key]:
+                                     summary_matrix[key][sector_name] = 0
+                                 summary_matrix[key][sector_name] += it['quantity']
+                                 
+                        sorted_sectors = sorted(list(sectors))
+                        summary_header = "Item\t" + "\t".join(sorted_sectors)
+                        summary_rows = [summary_header]
+                        for item_key, sector_qtys in sorted(summary_matrix.items()):
+                            row_cols = [item_key]
+                            for sec in sorted_sectors:
+                                qty = sector_qtys.get(sec, 0)
+                                row_cols.append(str(qty))
+                            summary_rows.append("\t".join(row_cols))
+                        batch_summary_str = "\n".join(summary_rows)
 
                         # Global Vars Context
                         now_hour = datetime.now().hour
@@ -318,19 +330,24 @@ def run_dispatcher():
                                 aggregated_items[key]['qt'] += it['quantity']
                                 total_val += (float(it.get('price', 0)) * it['quantity'])
 
-                            items_str = ""
-                            items_inline_list = []
-                            for key, data in aggregated_items.items():
-                                qt = data['qt']
-                                items_str += f"- {qt}x {key}\n"
-                                items_inline_list.append(f"{qt}x {key}")
-                            items_inline_str = " - ".join(items_inline_list)
-
                             # Attributes
                             addr = order_obj.sector.name if order_obj.sector else "N/A"
                             obs = "N/A" # Placeholder
                             user_name = order_obj.user.name if order_obj.user else 'Cliente'
                             user_phone = order_obj.user.phone if order_obj.user else 'N/A'
+                            
+                            items_str = ""
+                            items_inline_list = []
+                            is_first = True
+                            for key, data in aggregated_items.items():
+                                qt = data['qt']
+                                if is_first:
+                                    items_str += f"{user_name}\t{addr}\t{key}\t{qt}"
+                                    is_first = False
+                                else:
+                                    items_str += f"\n\t\t{key}\t{qt}"
+                                items_inline_list.append(f"{qt}x {key}")
+                            items_inline_str = " - ".join(items_inline_list)
                             
                             pay_method = "A Combinar"
                             if order_obj.pix_charge_id: pay_method = "Pix (Online)"
@@ -416,7 +433,7 @@ def run_dispatcher():
                             except:
                                 pass
                                 
-                            time.sleep(2) # Final delay to ensure transmission
+                            time.sleep(6) # Delay to ensure transmission
 
                             print(f"Sent to {num}")
                             
@@ -428,6 +445,7 @@ def run_dispatcher():
                         except Exception as e:
                             print(f"Failed to send to {num}: {e}")
             
+            time.sleep(5) # Give WhatsApp Web extra time to synchronize outbox
             browser.close()
             
         # Commit tracking changes (successful ones only)
