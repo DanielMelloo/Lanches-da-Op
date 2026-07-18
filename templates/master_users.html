@@ -173,18 +173,23 @@
             <!-- Subsite -->
             <div>
                 {% if user.role == 'admin' %}
-                <form method="POST" style="margin: 0; display: flex; flex-direction: column; gap: 8px;">
-                    <input type="hidden" name="user_id" value="{{ user.id }}">
-                    <input type="hidden" name="action" value="update_admin_subsites">
-                    <select name="subsite_ids" class="minimal-select" multiple style="height: 60px; font-size: 0.85em; padding: 4px; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: white;">
-                        {% for subsite in subsites %}
-                        <option value="{{ subsite.id }}" {{ 'selected' if subsite in user.managed_subsites else '' }}>
+                <div style="display: flex; flex-direction: column; gap: 5px;">
+                    <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                        {% for subsite in user.managed_subsites %}
+                        <span class="badge" style="background: rgba(0, 212, 255, 0.1); color: var(--accent-cyan); font-size: 0.75em; padding: 2px 8px; border-radius: 12px; border: 1px solid rgba(0, 212, 255, 0.15); display: inline-block;">
                             {{ subsite.name }}
-                        </option>
+                        </span>
+                        {% else %}
+                        <span class="text-muted" style="font-size: 0.85em;">Nenhum subsite</span>
                         {% endfor %}
-                    </select>
-                    <button type="submit" class="btn-neon" style="font-size: 0.75em; padding: 2px 8px; min-width: auto; height: 25px; align-self: flex-end; background: var(--accent-cyan); color: #000;">Salvar</button>
-                </form>
+                    </div>
+                    {% set managed_ids = user.managed_subsites|map(attribute='id')|list %}
+                    <button type="button" class="btn-neon" 
+                            onclick="openSubsitesModal({{ user.id }}, '{{ user.name|escape }}', {{ managed_ids|tojson }})" 
+                            style="font-size: 0.75em; padding: 2px 8px; min-width: auto; height: 25px; align-self: flex-start; margin-top: 5px; background: rgba(0,255,255,0.05); color: var(--accent-cyan); border-color: rgba(0,255,255,0.2);">
+                        <i class="ph ph-pencil-simple"></i> Alterar Acessos
+                    </button>
+                </div>
                 {% else %}
                 <form method="POST" style="margin: 0;">
                     <input type="hidden" name="user_id" value="{{ user.id }}">
@@ -236,6 +241,34 @@
     </div>
 </div>
 
+<!-- Reusable Subsites Modal -->
+<div id="subsitesModal" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.85); backdrop-filter: blur(5px); justify-content: center; align-items: center;">
+    <div class="glass-panel" style="width: 90%; max-width: 450px; padding: 30px; border: 1px solid var(--accent-cyan); border-radius: 12px; box-shadow: 0 0 30px rgba(0,255,255,0.15);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="margin: 0; color: var(--accent-cyan); display: flex; align-items: center; gap: 8px;">
+                <i class="ph ph-shield"></i> Subsites Gerenciados
+            </h3>
+            <button type="button" onclick="closeSubsitesModal()" class="icon-btn minimal" style="color: white; font-size: 1.5rem; cursor: pointer; background: transparent; border: none;">✕</button>
+        </div>
+        
+        <form id="subsitesModalForm" method="POST">
+            <input type="hidden" name="user_id" id="modal_user_id">
+            <input type="hidden" name="action" value="update_admin_subsites">
+            
+            <p style="color: var(--text-muted); font-size: 0.9em; margin-bottom: 20px;">Selecione os subsites aos quais este administrador terá permissão de gerenciar:</p>
+            
+            <div id="subsitesCheckboxContainer" style="display: flex; flex-direction: column; gap: 12px; max-height: 250px; overflow-y: auto; margin-bottom: 25px; padding-right: 5px;">
+                <!-- JavaScript populates checkboxes -->
+            </div>
+            
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="closeSubsitesModal()" class="btn-secondary" style="height: 38px; padding: 0 15px; border-radius: 6px;">Cancelar</button>
+                <button type="submit" class="btn-neon" style="height: 38px; min-width: 120px; border-radius: 6px;">Salvar Acessos</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
     // Phone Mask
     document.querySelectorAll('.phone-mask').forEach(input => {
@@ -243,6 +276,54 @@
             let x = e.target.value.replace(/\D/g, '').match(/(\d{0,2})(\d{0,5})(\d{0,4})/);
             e.target.value = !x[2] ? x[1] : '(' + x[1] + ') ' + x[2] + (x[3] ? '-' + x[3] : '');
         });
+    });
+
+    // Subsites Modal Logic
+    const allSubsites = [
+        {% for subsite in subsites %}
+        { id: {{ subsite.id }}, name: '{{ subsite.name|escape }}' },
+        {% endfor %}
+    ];
+
+    function openSubsitesModal(userId, userName, managedIds) {
+        document.getElementById('modal_user_id').value = userId;
+        
+        const container = document.getElementById('subsitesCheckboxContainer');
+        container.innerHTML = ''; // Clear previous
+        
+        allSubsites.forEach(subsite => {
+            const isChecked = managedIds.includes(subsite.id);
+            
+            const div = document.createElement('div');
+            div.style.display = 'flex';
+            div.style.alignItems = 'center';
+            div.style.gap = '10px';
+            div.style.padding = '8px 12px';
+            div.style.background = 'rgba(255,255,255,0.02)';
+            div.style.borderRadius = '6px';
+            div.style.border = '1px solid rgba(255,255,255,0.05)';
+            
+            div.innerHTML = `
+                <input type="checkbox" name="subsite_ids" value="${subsite.id}" id="chk-sub-${subsite.id}" ${isChecked ? 'checked' : ''} style="accent-color: var(--accent-cyan); width: 18px; height: 18px; cursor: pointer;">
+                <label for="chk-sub-${subsite.id}" style="color: white; cursor: pointer; flex: 1; user-select: none;">${subsite.name}</label>
+            `;
+            container.appendChild(div);
+        });
+        
+        const modal = document.getElementById('subsitesModal');
+        modal.style.display = 'flex';
+    }
+
+    function closeSubsitesModal() {
+        document.getElementById('subsitesModal').style.display = 'none';
+    }
+
+    // Close when clicking outside of modal content
+    window.addEventListener('click', function(event) {
+        const modal = document.getElementById('subsitesModal');
+        if (event.target === modal) {
+            closeSubsitesModal();
+        }
     });
 </script>
 {% endblock %}
