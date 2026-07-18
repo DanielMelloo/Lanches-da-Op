@@ -13,7 +13,6 @@ def run():
         "-N",
         "-L", "3307:127.0.0.1:3306",
         "-o", "ServerAliveInterval=60",
-        "-o", "StrictHostKeyChecking=no",
         "ec2-user@danielmello.store"
     ]
     
