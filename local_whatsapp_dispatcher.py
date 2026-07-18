@@ -228,7 +228,7 @@ def run_dispatcher():
                             "----------------------------------------\n\n"
                             "📊 *RESUMO GERAL DOS PEDIDOS:*\n"
                             "{resumo_geral}\n\n"
-                            "⚠️ _Mensagem gerada automaticamente pelo centralizador Lanches OP._"
+                            "⚠️ Mensagem gerada automaticamente pelo centralizador Lanches OP, caso tenha algum apontamento, por favor, aguarde pois posso estar atuando na área, assim que possível retorno o contato."
                         )
                         
                     # Smart Template Parsing
