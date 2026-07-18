@@ -372,6 +372,10 @@ def checkout(subsite_id):
     pass
     
     if request.method == 'POST':
+        sector_id = request.form.get('sector_id')
+        if sector_id:
+            session['selected_sector_id'] = sector_id
+
         # Check caixinha limits (items only)
         if subsite.caixinha_active and subsite.caixinha_limit_active:
             if subsite.caixinha_limit_value > 0 and total_items > subsite.caixinha_limit_value:
@@ -382,8 +386,6 @@ def checkout(subsite_id):
             if subsite.caixinha_limit_quantity > 0 and total_qty > subsite.caixinha_limit_quantity:
                 flash(f'Pedido excede o limite de quantidade de itens da caixinha (máximo {subsite.caixinha_limit_quantity} itens). Seu pedido tem {total_qty} itens.', 'error')
                 return redirect(url_for('user.checkout', subsite_id=subsite_id))
-
-        sector_id = request.form.get('sector_id')
         
         # Determine initial status and payment status
         if subsite.caixinha_active:
@@ -486,6 +488,7 @@ def checkout(subsite_id):
 
         # Clear cart
         session.pop('cart', None)
+        session.pop('selected_sector_id', None)
         
         return redirect(url_for('user.order_detail', order_id=new_order.id))
 
@@ -502,7 +505,8 @@ def checkout(subsite_id):
                            total_general=total_general,
                            total_with_tax=total_with_tax,
                            service_fee=service_fee,
-                           sectors=sectors)
+                           sectors=sectors,
+                           selected_sector_id=session.get('selected_sector_id'))
 
 @user_bp.route('/profile', methods=['GET', 'POST'])
 @login_required

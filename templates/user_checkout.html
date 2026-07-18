@@ -58,14 +58,25 @@
             </div>
 
             <!-- Bottom Row: Controls + Subtotal -->
-            <div class="flex items-center justify-between mt-sm pt-sm"
-                style="border-top: 1px solid rgba(255,255,255,0.1);">
+            <div class="flex items-center mt-sm pt-sm"
+                style="border-top: 1px solid rgba(255,255,255,0.1); justify-content: space-evenly; width: 100%;">
                 <!-- Qty Control -->
-                <form method="POST" action="{{ url_for('user.update_cart') }}" class="flex items-center gap-sm">
+                <form method="POST" action="{{ url_for('user.update_cart') }}" class="flex items-center" style="gap: 5px; margin: 0;">
                     <input type="hidden" name="item_id" value="{{ cart_item.item.id }}">
                     <input type="hidden" name="subsite_id" value="{{ subsite.id }}">
+                    
+                    <button type="button" onclick="decrementQty(this)" 
+                        style="width: 28px; height: 28px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: bold; transition: all 0.2s; outline: none;">
+                        -
+                    </button>
+                    
                     <input type="number" name="quantity" value="{{ cart_item.qty }}" min="1" max="99"
-                        style="width: 60px; text-align: center; margin-bottom: 0;">
+                        style="width: 45px; height: 28px; text-align: center; margin-bottom: 0; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; color: white; font-weight: bold; outline: none;">
+                    
+                    <button type="button" onclick="incrementQty(this)" 
+                        style="width: 28px; height: 28px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: bold; transition: all 0.2s; outline: none;">
+                        +
+                    </button>
                 </form>
 
                 <div class="text-right">
@@ -100,7 +111,7 @@
         <select name="sector_id" required class="w-full mb-lg">
             <option value="">-- Escolha o local --</option>
             {% for sector in sectors %}
-            <option value="{{ sector.id }}">{{ sector.name }}</option>
+            <option value="{{ sector.id }}" {% if selected_sector_id|string == sector.id|string %}selected{% endif %}>{{ sector.name }}</option>
             {% else %}
             <option value="" disabled>Nenhum local de entrega configurado.</option>
             {% endfor %}
@@ -192,6 +203,15 @@
             transform: rotate(360deg);
         }
     }
+    /* Hide HTML5 Up/Down Spinners */
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    input[type=number] {
+        -moz-appearance: textfield;
+    }
 </style>
 
 <script>
@@ -204,9 +224,35 @@
         }
     });
 
-    // Auto-submit quantity changes (optional optimization: debounce if needed, but keeping simple)
+    // Auto-submit quantity changes on manual inputs or JavaScript changes
     document.querySelectorAll('input[name="quantity"]').forEach(input => {
-        input.addEventListener('change', () => input.form.submit());
+        input.addEventListener('change', () => {
+            if (parseInt(input.value) >= 1) {
+                input.form.submit();
+            }
+        });
+        // Permit enter key to submit manually
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                input.form.submit();
+            }
+        });
     });
+
+    function incrementQty(btn) {
+        const input = btn.parentNode.querySelector('input[name="quantity"]');
+        input.value = parseInt(input.value) + 1;
+        input.dispatchEvent(new Event('change'));
+    }
+
+    function decrementQty(btn) {
+        const input = btn.parentNode.querySelector('input[name="quantity"]');
+        const val = parseInt(input.value);
+        if (val > 1) {
+            input.value = val - 1;
+            input.dispatchEvent(new Event('change'));
+        }
+    }
 </script>
 {% endblock %}

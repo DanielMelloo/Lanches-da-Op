@@ -141,7 +141,7 @@ def process_store(store_id):
                 # Simple loose matching
                 if any(tc.lower() in it['category'].lower() for tc in target_cats):
                     # Check Image for Placeholder
-                    if 'item_no_image' in it.get('image_url', ''):
+                    if not it.get('image_url') or 'item_no_image' in it.get('image_url', ''):
                         it['image_url'] = "/static/placeholders/default.png"
 
                     filtered_items.append(it)
@@ -179,13 +179,13 @@ def process_store(store_id):
                 if existing:
                     existing.price = price_val
                     existing.description = item_data['description']
-                    existing.image_url = item_data['image_url']
+                    existing.image_url = item_data['image_url'] if item_data['image_url'] else "/static/placeholders/default.png"
                 else:
                     new_item = Item(
                         name=item_data['name'],
                         price=price_val,
                         description=item_data['description'],
-                        image_url=item_data['image_url'],
+                        image_url=item_data['image_url'] if item_data['image_url'] else "/static/placeholders/default.png",
                         store_id=store.id,
                         sector_id=sector_map.get(item_data['category']),
                         active=True

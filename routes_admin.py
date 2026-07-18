@@ -461,6 +461,8 @@ def items():
                 item.store_id = int(store_id)
                 if image_url:
                     item.image_url = image_url
+                else:
+                    item.image_url = '/static/placeholders/default.png'
                 if subitems_json is not None:
                     item.subitems_json = subitems_json
                 db.session.commit()
@@ -515,6 +517,8 @@ def edit_item(item_id):
         
         if image_url:
             item.image_url = image_url
+        else:
+            item.image_url = '/static/placeholders/default.png'
 
         # Handle JSON
         import json
