@@ -59,4 +59,10 @@ if __name__ == "__main__":
         # Presets Table
         create_presets_table()
         
+        # Caixinha Subsites Columns
+        check_and_add_column('subsites', 'caixinha_active', 'TINYINT(1) DEFAULT 0')
+        check_and_add_column('subsites', 'caixinha_limit_active', 'TINYINT(1) DEFAULT 0')
+        check_and_add_column('subsites', 'caixinha_limit_value', 'FLOAT DEFAULT 0.0')
+        check_and_add_column('subsites', 'caixinha_limit_quantity', 'INT DEFAULT 0')
+        
         print("Schema Update Completed.")
