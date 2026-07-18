@@ -1,3 +1,0 @@
-corrigir processos zumbi do bot_gui
-corrigir interface do https://danielmello.store/admin/stores
-verificar se as mensagens para pedidos complexos funcina

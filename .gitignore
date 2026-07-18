@@ -22,3 +22,20 @@ certs/
 *.pem
 *.key
 *.p12
+*.pfx
+
+# Executables and builds
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Backups and notes
+*.backup
+*.bak
+*.old
+todo.txt
+
+# Documents and logs
+*.pdf
+*.log
