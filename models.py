@@ -98,6 +98,11 @@ class Subsite(db.Model):
                 
         return True
 
+admin_subsites = db.Table('admin_subsites',
+    db.Column('user_id', db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), primary_key=True),
+    db.Column('subsite_id', db.Integer, db.ForeignKey('subsites.id', ondelete='CASCADE'), primary_key=True)
+)
+
 class User(db.Model, UserMixin):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
@@ -107,8 +112,11 @@ class User(db.Model, UserMixin):
     password_hash = db.Column(db.String(256))
     role = db.Column(db.Enum('user', 'admin', 'admin_master'), default='user')
     subsite_id = db.Column(db.Integer, db.ForeignKey('subsites.id'))
+    avatar_url = db.Column(db.String(500))
     created_at = db.Column(db.DateTime, default=get_sp_time)
     active = db.Column(db.Boolean, default=True)
+
+    managed_subsites = db.relationship('Subsite', secondary=admin_subsites, backref=db.backref('admin_users', lazy=True))
 
     @property
     def is_active(self):
@@ -211,3 +219,13 @@ class OrderItem(db.Model):
     subitems_json = db.Column(db.JSON)
     
     item = db.relationship('Item')
+
+class PasswordChangeRequest(db.Model):
+    __tablename__ = 'password_change_requests'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    new_password_hash = db.Column(db.String(256), nullable=False)
+    status = db.Column(db.Enum('pending', 'approved', 'rejected'), default='pending')
+    created_at = db.Column(db.DateTime, default=get_sp_time)
+    
+    user = db.relationship('User', backref='password_requests')

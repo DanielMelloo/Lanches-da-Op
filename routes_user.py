@@ -213,14 +213,18 @@ def api_orders():
     page = request.args.get('page', 1, type=int)
     per_page = 10
     filter_status = request.args.get('filter', 'all')
+    only_delivered = request.args.get('only_delivered', 'false') == 'true'
     
     query = Order.query.filter_by(user_id=current_user.id)
     
-    if filter_status == 'pending':
-        query = query.join(Status).filter(Status.name.in_(['Pagamento Pendente', 'Pendente', 'Novo']))
-    elif filter_status == 'completed':
-        query = query.join(Status).filter(Status.name.in_(['Pagamento Confirmado', 'Concluido', 'Entregue', 'Enviado']))
-        
+    if only_delivered:
+        query = query.join(Status).filter(Status.name == 'Entregue')
+    else:
+        if filter_status == 'pending':
+            query = query.join(Status).filter(Status.name.in_(['Pagamento Pendente', 'Pendente', 'Novo']))
+        elif filter_status == 'completed':
+            query = query.join(Status).filter(Status.name.in_(['Pagamento Confirmado', 'Concluido', 'Entregue', 'Enviado']))
+            
     pagination = query.order_by(Order.created_at.desc()).paginate(page=page, per_page=per_page, error_out=False)
     
     return render_template('partials/order_list_items.html', orders=pagination.items, pagination=pagination, filter_status=filter_status)
@@ -511,6 +515,11 @@ def checkout(subsite_id):
 @user_bp.route('/profile', methods=['GET', 'POST'])
 @login_required
 def profile():
+    import os
+    from werkzeug.security import check_password_hash
+    from werkzeug.utils import secure_filename
+    from models import PasswordChangeRequest
+
     if request.method == 'POST':
         name = request.form.get('name')
         phone = request.form.get('phone')
@@ -533,6 +542,107 @@ def profile():
         if phone and (len(clean_phone) < 10 or len(clean_phone) > 11):
              flash('Telefone inválido. Use (DD) 9XXXX-XXXX', 'error')
              return redirect(url_for('user.profile'))
+
+        # Avatar Upload Logic
+        avatar_file = request.files.get('avatar')
+        if avatar_file and avatar_file.filename:
+            # 1. Extension validation
+            filename = secure_filename(avatar_file.filename)
+            ext = os.path.splitext(filename)[1].lower()
+            if ext not in ['.jpg', '.jpeg', '.png', '.webp', '.gif']:
+                flash('Extensão de arquivo inválida. Apenas JPG, PNG, WEBP e GIF são permitidos.', 'error')
+                return redirect(url_for('user.profile'))
+            
+            # 2. Size validation (max 2MB)
+            avatar_file.seek(0, os.SEEK_END)
+            file_size = avatar_file.seek(0, os.SEEK_END)
+            avatar_file.seek(0)
+            if file_size > 2 * 1024 * 1024:
+                flash('Arquivo muito grande. O tamanho máximo permitido é de 2MB.', 'error')
+                return redirect(url_for('user.profile'))
+                
+            # 3. MIME-type validation
+            mime_type = avatar_file.content_type
+            if not mime_type or not mime_type.startswith('image/'):
+                flash('Tipo de mídia inválido. O arquivo precisa ser uma imagem.', 'error')
+                return redirect(url_for('user.profile'))
+                
+            # 4. Magic bytes validation using PIL
+            from PIL import Image
+            try:
+                img = Image.open(avatar_file)
+                img.verify() # Verify image integrity
+                
+                # Reopen for saving/processing to strip metadata and prevent injection
+                avatar_file.seek(0)
+                img = Image.open(avatar_file)
+                
+                # Convert RGBA to RGB for JPEG, or keep format
+                img_format = img.format if img.format in ['JPEG', 'PNG', 'WEBP', 'GIF'] else 'JPEG'
+                
+                # Create upload dir
+                upload_dir = os.path.join(current_app.root_path, 'static', 'uploads', 'avatars')
+                os.makedirs(upload_dir, exist_ok=True)
+                
+                # Secure unique filename
+                import uuid
+                new_filename = f"avatar_{current_user.id}_{uuid.uuid4().hex}{ext}"
+                filepath = os.path.join(upload_dir, new_filename)
+                
+                # Save sanitized image
+                img.save(filepath, format=img_format)
+                
+                # Remove previous avatar file if exists
+                if current_user.avatar_url and current_user.avatar_url.startswith('/static/uploads/avatars/'):
+                    old_path = os.path.join(current_app.root_path, current_user.avatar_url.lstrip('/'))
+                    if os.path.exists(old_path):
+                        try:
+                            os.remove(old_path)
+                        except:
+                            pass
+                
+                current_user.avatar_url = f"/static/uploads/avatars/{new_filename}"
+            except Exception as e:
+                flash('Arquivo de imagem inválido ou corrompido.', 'error')
+                return redirect(url_for('user.profile'))
+
+        # Password Change Logic
+        change_password = request.form.get('change_password') == 'true'
+        if change_password:
+            current_password = request.form.get('current_password')
+            new_password = request.form.get('new_password')
+            confirm_password = request.form.get('confirm_password')
+            
+            # If current_user already has a password, verify it
+            if current_user.password_hash:
+                if not current_password or not check_password_hash(current_user.password_hash, current_password):
+                    flash('Senha atual incorreta.', 'error')
+                    return redirect(url_for('user.profile'))
+            
+            if not new_password or len(new_password) < 6:
+                flash('A nova senha deve ter pelo menos 6 caracteres.', 'error')
+                return redirect(url_for('user.profile'))
+                
+            if new_password != confirm_password:
+                flash('A confirmação da nova senha não coincide.', 'error')
+                return redirect(url_for('user.profile'))
+                
+            # Create a pending PasswordChangeRequest
+            from werkzeug.security import generate_password_hash
+            
+            # Check if there's already a pending request for this user, delete it if exists (to overwrite)
+            existing_req = PasswordChangeRequest.query.filter_by(user_id=current_user.id, status='pending').first()
+            if existing_req:
+                db.session.delete(existing_req)
+                
+            req = PasswordChangeRequest(
+                user_id=current_user.id,
+                new_password_hash=generate_password_hash(new_password),
+                status='pending'
+            )
+            db.session.add(req)
+            db.session.commit()
+            flash('Solicitação de alteração de senha enviada! Aguardando aprovação do Master Admin.', 'info')
 
         current_user.name = name
         current_user.phone = phone

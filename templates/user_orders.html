@@ -14,6 +14,13 @@
     </div>
 </div>
 
+<div class="flex justify-center mb-md" style="margin-top: 15px;">
+    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-muted); font-size: 0.9em; user-select: none;">
+        <input type="checkbox" id="only-delivered-toggle" onchange="toggleOnlyDelivered()" style="accent-color: var(--accent-cyan); width: 16px; height: 16px; cursor: pointer;">
+        <span>Listar apenas pedidos com status "Entregue"</span>
+    </label>
+</div>
+
 <div id="orders-container">
     <!-- Skeleton Loader (Initial State) -->
     {% for i in range(5) %}
@@ -44,6 +51,13 @@
 <script>
     let currentFilter = '{{ filter_status|default("all") }}';
     let currentPage = 1;
+    let onlyDelivered = false;
+
+    function toggleOnlyDelivered() {
+        onlyDelivered = document.getElementById('only-delivered-toggle').checked;
+        currentPage = 1;
+        loadOrders(1);
+    }
 
     function changeFilter(filter) {
         currentFilter = filter;
@@ -71,7 +85,7 @@
         // Or just let it replace. Let's add opacity transition.
         container.style.opacity = '0.5';
 
-        const url = `/user/api/orders?filter=${currentFilter}&page=${page}`;
+        const url = `/api/orders?filter=${currentFilter}&page=${page}&only_delivered=${onlyDelivered}`;
 
         fetch(url)
             .then(response => response.text())

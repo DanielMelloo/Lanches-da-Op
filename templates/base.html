@@ -58,7 +58,11 @@
                     style="background: rgba(255,255,255,0.05); padding: 5px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); text-decoration: none; color: white; transition: all 0.2s;"
                     onmouseover="this.style.background='rgba(255,255,255,0.1)'"
                     onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+                    {% if current_user.avatar_url %}
+                    <img src="{{ current_user.avatar_url }}" alt="Avatar" style="width: 20px; height: 20px; border-radius: 50%; object-fit: cover; margin-right: 8px;">
+                    {% else %}
                     <i class="ph ph-user text-muted" style="margin-right: 8px;"></i>
+                    {% endif %}
                     <span style="font-weight: bold;">{{ current_user.petro_key }}</span>
                 </a>
 

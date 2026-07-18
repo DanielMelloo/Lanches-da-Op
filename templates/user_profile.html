@@ -6,17 +6,30 @@
 <div style="display: flex; justify-content: center; padding-top: 20px;">
     <div class="glass-panel" style="width: 100%; max-width: 500px; padding: 40px;">
 
-        <!-- Profile Header -->
+        <!-- Profile Header & Avatar -->
         <div class="text-center mb-xl">
-            <div
-                style="width: 80px; height: 80px; background: var(--accent-cyan); border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px rgba(0,255,255,0.4);">
-                <i class="ph-bold ph-user" style="font-size: 40px; color: #000;"></i>
+            <div style="position: relative; width: 90px; height: 90px; margin: 0 auto 15px;">
+                {% if current_user.avatar_url %}
+                <img id="avatar_preview_img" src="{{ current_user.avatar_url }}" alt="Avatar" 
+                     style="width: 90px; height: 90px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent-cyan); box-shadow: 0 0 20px rgba(0,255,255,0.4);">
+                {% else %}
+                <div id="avatar_placeholder" style="width: 90px; height: 90px; background: var(--accent-cyan); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px rgba(0,255,255,0.4);">
+                    <i class="ph-bold ph-user" style="font-size: 45px; color: #000;"></i>
+                </div>
+                {% endif %}
+                <!-- Upload button badge -->
+                <label for="avatar_input" style="position: absolute; bottom: 0; right: 0; background: var(--accent-cyan); color: #000; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid #000; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'">
+                    <i class="ph ph-camera" style="font-size: 16px;"></i>
+                </label>
             </div>
             <h2 style="margin: 0; font-size: 1.8em;">Meu Perfil</h2>
             <div class="text-muted">Gerencie suas informações</div>
         </div>
 
-        <form method="POST">
+        <form method="POST" enctype="multipart/form-data">
+            <!-- Hidden input for file -->
+            <input type="file" id="avatar_input" name="avatar" accept="image/*" style="display: none;" onchange="previewAvatar(this)">
+
             <!-- Key Section (Highlighted & Centered) -->
             <div
                 style="margin-bottom: 32px; padding: 24px; border-radius: 16px; position: relative; overflow: hidden; background: rgba(0,255,255,0.03); border: 1px solid rgba(0,255,255,0.1); text-align: center;">
@@ -55,13 +68,40 @@
                 </div>
             </div>
 
-            <div class="form-group" style="margin-bottom: 30px;">
+            <div class="form-group" style="margin-bottom: 20px;">
                 <label for="phone" style="margin-bottom: 8px; display: block;">Telefone / WhatsApp</label>
                 <div style="position: relative;">
                     <input type="tel" id="phone" name="phone" value="{{ current_user.phone or '' }}"
                         placeholder="(00) 00000-0000" style="padding-left: 45px; margin-bottom: 0;">
                     <i class="ph ph-whatsapp-logo"
                         style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 1.2em;"></i>
+                </div>
+            </div>
+
+            <!-- Password Change Section -->
+            <div style="margin-bottom: 30px; padding: 20px; border-radius: 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);">
+                <label class="checkbox-container" style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 0;">
+                    <input type="checkbox" name="change_password" value="true" id="change-pass-toggle" onchange="togglePasswordSection(this)" style="width: 18px; height: 18px; accent-color: var(--accent-cyan);">
+                    <span style="font-weight: bold; color: var(--accent-cyan);">Alterar minha senha</span>
+                </label>
+                
+                <div id="password-fields" style="display: none; flex-direction: column; gap: 15px; margin-top: 15px;">
+                    {% if current_user.password_hash %}
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="current_password" style="font-size: 0.9em; margin-bottom: 5px; display: block;">Senha Atual</label>
+                        <input type="password" id="current_password" name="current_password" placeholder="Digite sua senha atual">
+                    </div>
+                    {% endif %}
+                    
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="new_password" style="font-size: 0.9em; margin-bottom: 5px; display: block;">Nova Senha</label>
+                        <input type="password" id="new_password" name="new_password" placeholder="Mínimo 6 caracteres" minlength="6">
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="confirm_password" style="font-size: 0.9em; margin-bottom: 5px; display: block;">Confirmar Nova Senha</label>
+                        <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirme sua nova senha" minlength="6">
+                    </div>
                 </div>
             </div>
 
@@ -88,5 +128,50 @@
         let x = e.target.value.replace(/\D/g, '').match(/(\d{0,2})(\d{0,5})(\d{0,4})/);
         e.target.value = !x[2] ? x[1] : '(' + x[1] + ') ' + x[2] + (x[3] ? '-' + x[3] : '');
     });
+
+    function togglePasswordSection(cb) {
+        const fields = document.getElementById('password-fields');
+        const inputs = fields.querySelectorAll('input');
+        if (cb.checked) {
+            fields.style.display = 'flex';
+            inputs.forEach(input => input.setAttribute('required', 'true'));
+        } else {
+            fields.style.display = 'none';
+            inputs.forEach(input => {
+                input.removeAttribute('required');
+                input.value = '';
+            });
+        }
+    }
+    
+    function previewAvatar(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                let img = document.getElementById('avatar_preview_img');
+                if (img) {
+                    img.src = e.target.result;
+                } else {
+                    const placeholder = document.getElementById('avatar_placeholder');
+                    if (placeholder) {
+                        const newImg = document.createElement('img');
+                        newImg.id = 'avatar_preview_img';
+                        newImg.src = e.target.result;
+                        newImg.style.width = '90px';
+                        newImg.style.height = '90px';
+                        newImg.style.borderRadius = '50%';
+                        newImg.style.objectFit = 'cover';
+                        newImg.style.border = '2px solid var(--accent-cyan)';
+                        newImg.style.boxShadow = '0 0 20px rgba(0,255,255,0.4)';
+                        placeholder.parentNode.replaceChild(newImg, placeholder);
+                    }
+                }
+                const label = input.parentNode.querySelector('label[for="avatar_input"]');
+                label.style.backgroundColor = 'var(--accent-green)';
+                label.innerHTML = '<i class="ph ph-check" style="font-size: 16px;"></i>';
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
 </script>
 {% endblock %}

@@ -16,6 +16,32 @@ def require_admin():
         flash('Acesso negado.', 'error')
         return redirect(url_for('index'))
 
+    if current_user.role == 'admin':
+        allowed_ids = [s.id for s in current_user.managed_subsites]
+        if current_user.subsite_id:
+            allowed_ids.append(current_user.subsite_id)
+            
+        selected_id = session.get('admin_subsite_id')
+        if selected_id and selected_id in allowed_ids:
+            current_user.subsite_id = selected_id
+        elif allowed_ids:
+            current_user.subsite_id = allowed_ids[0]
+
+@admin_bp.route('/switch_subsite', methods=['POST'])
+def switch_subsite():
+    subsite_id = int(request.form.get('subsite_id'))
+    allowed_ids = [s.id for s in current_user.managed_subsites]
+    if current_user.subsite_id:
+        allowed_ids.append(current_user.subsite_id)
+        
+    if subsite_id in allowed_ids:
+        session['admin_subsite_id'] = subsite_id
+        flash('Subsite alterado com sucesso!', 'success')
+    else:
+        flash('Acesso não permitido a este subsite.', 'error')
+        
+    return redirect(url_for('admin.dashboard'))
+
 @admin_bp.route('/dashboard')
 def dashboard():
     subsite_id = current_user.subsite_id

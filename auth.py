@@ -48,6 +48,7 @@ def login():
 
 @auth_bp.route('/login/admin', methods=['GET', 'POST'])
 def login_admin():
+    from flask import session
     if request.method == 'POST':
         petro_key = request.form.get('petro_key', '').upper()
         password = request.form.get('password')
@@ -55,25 +56,62 @@ def login_admin():
         # Allow both admin and admin_master here
         user = User.query.filter(User.petro_key == petro_key, User.role.in_(['admin', 'admin_master'])).first()
         
-        if user and user.password_hash and check_password_hash(user.password_hash, password):
-            remember = 'remember' in request.form
-            login_user(user, remember=remember)
-            
-            from flask import session
-            session.permanent = True
-            
-            if user.role == 'admin_master':
-                 flash(f'Bem-vindo, Master {user.name}!', 'success')
-                 return redirect(url_for('master.dashboard'))
+        if user:
+            if not user.password_hash:
+                session['setup_password_user_id'] = user.id
+                flash('Você foi promovido a administrador! Cadastre uma senha para continuar.', 'info')
+                return redirect(url_for('auth.setup_password'))
+            elif check_password_hash(user.password_hash, password):
+                remember = 'remember' in request.form
+                login_user(user, remember=remember)
+                session.permanent = True
+                
+                if user.role == 'admin_master':
+                     flash(f'Bem-vindo, Master {user.name}!', 'success')
+                     return redirect(url_for('master.dashboard'))
+                else:
+                     flash(f'Bem-vindo, {user.name}!', 'success')
+                     return redirect(url_for('admin.dashboard'))
             else:
-                 flash(f'Bem-vindo, {user.name}!', 'success')
-                 return redirect(url_for('admin.dashboard'))
+                flash('Credenciais administrativas inválidas.', 'error')
         else:
             flash('Credenciais administrativas inválidas.', 'error')
-    
-    # We can reuse login_master.html or create a generic login_admin.html
-    # For now, let's render 'login_admin.html' (to be created)
+            
     return render_template('login_admin.html')
+
+@auth_bp.route('/setup_password', methods=['GET', 'POST'])
+def setup_password():
+    from flask import session
+    user_id = session.get('setup_password_user_id')
+    if not user_id:
+        return redirect(url_for('auth.login_admin'))
+        
+    user = User.query.get(user_id)
+    if not user or user.password_hash:
+        session.pop('setup_password_user_id', None)
+        return redirect(url_for('auth.login_admin'))
+        
+    if request.method == 'POST':
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        
+        if not password or len(password) < 6:
+            flash('A senha deve ter pelo menos 6 caracteres.', 'error')
+            return render_template('setup_password.html', user=user)
+            
+        if password != confirm_password:
+            flash('As senhas não coincidem.', 'error')
+            return render_template('setup_password.html', user=user)
+            
+        from werkzeug.security import generate_password_hash
+        user.password_hash = generate_password_hash(password)
+        db.session.commit()
+        
+        session.pop('setup_password_user_id', None)
+        flash('Senha cadastrada com sucesso! Faça login para continuar.', 'success')
+        return redirect(url_for('auth.login_admin'))
+        
+    return render_template('setup_password.html', user=user)
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():

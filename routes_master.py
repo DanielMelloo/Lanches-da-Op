@@ -18,7 +18,30 @@ def require_master(f):
 @master_bp.route('/dashboard')
 @require_master
 def dashboard():
-    return render_template('master_dashboard.html')
+    from models import PasswordChangeRequest
+    requests = PasswordChangeRequest.query.filter_by(status='pending').all()
+    return render_template('master_dashboard.html', password_requests=requests)
+
+@master_bp.route('/password_request/<int:request_id>/approve', methods=['POST'])
+@require_master
+def approve_password_request(request_id):
+    from models import PasswordChangeRequest
+    req = PasswordChangeRequest.query.get_or_404(request_id)
+    req.status = 'approved'
+    req.user.password_hash = req.new_password_hash
+    db.session.commit()
+    flash(f'Solicitação de alteração de senha de {req.user.name} aprovada com sucesso!', 'success')
+    return redirect(url_for('master.dashboard'))
+
+@master_bp.route('/password_request/<int:request_id>/reject', methods=['POST'])
+@require_master
+def reject_password_request(request_id):
+    from models import PasswordChangeRequest
+    req = PasswordChangeRequest.query.get_or_404(request_id)
+    req.status = 'rejected'
+    db.session.commit()
+    flash(f'Solicitação de alteração de senha de {req.user.name} rejeitada.', 'success')
+    return redirect(url_for('master.dashboard'))
 
 @master_bp.route('/subsite/<int:subsite_id>/update_tax', methods=['POST'])
 @require_master
@@ -234,6 +257,18 @@ def manage_users():
                 user.subsite_id = request.form.get('subsite_id') or None
                 db.session.commit()
                 flash('Subsite atualizado.', 'success')
+
+            elif action == 'update_admin_subsites':
+                from models import Subsite
+                subsite_ids = request.form.getlist('subsite_ids')
+                user.managed_subsites = []
+                for s_id in subsite_ids:
+                    s = Subsite.query.get(int(s_id))
+                    if s:
+                        user.managed_subsites.append(s)
+                user.subsite_id = int(subsite_ids[0]) if subsite_ids else None
+                db.session.commit()
+                flash('Subsites gerenciados atualizados.', 'success')
 
             elif action == 'toggle_active':
                 user.active = not user.active

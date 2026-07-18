@@ -99,7 +99,27 @@
         <div style="display: flex; align-items: center; gap: 20px;">
             <div>
                 <h2 style="margin: 0;">Painel Admin</h2>
+                {% if current_user.managed_subsites and current_user.managed_subsites|length > 1 %}
+                <form action="{{ url_for('admin.switch_subsite') }}" method="POST" style="margin: 5px 0 0 0;">
+                    <select name="subsite_id" onchange="this.form.submit()" class="minimal-select" style="height: 30px; font-size: 0.95em; padding: 2px 25px 2px 10px; border-radius: 15px; background: rgba(255,255,255,0.08); color: white; border: 1px solid rgba(255,255,255,0.15); cursor: pointer; outline: none;">
+                        {% for s in current_user.managed_subsites %}
+                        <option value="{{ s.id }}" {{ 'selected' if subsite.id == s.id else '' }}>
+                            {{ s.name }}
+                        </option>
+                        {% endfor %}
+                        {% if current_user.subsite_id and current_user.subsite_id not in current_user.managed_subsites|map(attribute='id') %}
+                        {% set primary_sub = Subsite.query.get(current_user.subsite_id) %}
+                        {% if primary_sub %}
+                        <option value="{{ primary_sub.id }}" {{ 'selected' if subsite.id == primary_sub.id else '' }}>
+                            {{ primary_sub.name }}
+                        </option>
+                        {% endif %}
+                        {% endif %}
+                    </select>
+                </form>
+                {% else %}
                 <p class="text-muted" style="margin: 0;">{{ subsite.name }}</p>
+                {% endif %}
             </div>
             
             <!-- Store Status Indicator -->
